@@ -210,12 +210,14 @@ def get_segmentation(
         segment_only=False,
         merge_segment_only=False,
         seg_vol=None,
+        voxel_size=None,
         deltas='[15, 15, 3]',  # '[27, 27, 6]'
+        target_voxel=np.asarray([13.2, 13.2, 26]),
         seed_policy='PolicyMembrane',  # 'PolicyPeaks'
         membrane_slice=[64, 384, 384],  # 576
         membrane_overlap_factor=[0.5, 0.5, 0.5],  # [0.875, 2./3., 2./3.],
-        debug_resize=False,
-        debug_nii=False,
+        res_shape=None,
+        z_shape=None,
         path_extent=None,  # [1, 1, 1],
         rotate=False):
     """Apply the FFN routines using fGRUs."""
@@ -223,68 +225,79 @@ def get_segmentation(
     config = Config()
     assert move_threshold is not None
     assert segment_threshold is not None
-    # config.membrane_ckpt = "/media/data_cifs/connectomics/checkpoints/ffn_mem_model_wong3d_0_wong3d_0_2021_03_10_16_00_23_126603/model_47000.ckpt-47000"
-    # config.membrane_ckpt = "/media/data_cifs/connectomics/checkpoints/ffn_mem_model_wong3d_0_wong3d_0_2021_03_15_22_03_00_916465/model_28000.ckpt-28000"
+    assert voxel_size is not None
+    voxel_size = np.asarray([int(x) for x in voxel_size.split(",")])
     path_extent = np.asarray([int(x) for x in path_extent.split(",")])
     model_shape = (config.shape * path_extent)
     mpath = '/localscratch/middle_cube_membranes_for_ffn_training'
-    # membrane_slice = [60, 120*2, 120*2]
-    # config.shape = np.asarray([60, 120, 120])
     membrane_slice = None  # [60, 120*2, 120*2]
-    res_shape = [200, 200]  # [384, 384]  # [384, 384]  # [1152, 1152]  # [360, 360]  # 438
-    z_shape = 128  # 256  # 384
+
+    # Move this to the DB
+    vol = np.load("/media/data_cifs/connectomics/datasets/middle_cube.npy")  # filtered_wong_berson.npz")
+    vol_shape = np.asarray([x for x in vol.shape])
+
+    # Figure out how to resize from voxel_size -> target_size
+    if res_shape is None:
+        target_ratio = float(target_voxel[-1]) / float(target_voxel[0])
+        inp_ratio = float(voxel_size[-1]) / float(voxel_size[0])
+        mod = target_ratio / inp_ratio
+        res_shape = (vol_shape[1:] * mod).astype(int)
+        if res_shape[0] % 2:
+            depth = 3
+            check = True
+            while check:
+                res_shape -= 1
+                split = res_shape[0] / 2
+                for idx in range(2):
+                    if np.floor(split) == np.ceil(split):
+                        split /= 2
+                    else:
+                        continue
+                    if idx == 1:
+                        check = False
+    if z_shape is None:
+        z_shape = res_shape[0]  # set to a reasonable value to process a bunch at a time
     crop_shape = None  # [640, 640]
     if crop_shape is not None:
         config.shape = np.asarray([z_shape] + crop_shape)
     else:
-        config.shape = np.asarray([z_shape] + res_shape)
+        config.shape = np.asarray([z_shape] + res_shape.tolist())
     model_shape = config.shape
-    if idx == 0:
-        # 1. select a volume
-        vol = np.load("/media/data_cifs/connectomics/datasets/middle_cube.npy")  # filtered_wong_berson.npz")
-        # vol = vol["volume"]
-        vol = resize(vol.transpose(1, 2, 0), res_shape, anti_aliasing=True, preserve_range=True, order=3).transpose(2, 0, 1)
-        vol = vol.astype(np.float32) / 255.
-        vol = vol[:z_shape]
-        if crop_shape is not None:
-            vol = vol[:, :crop_shape[0], :crop_shape[1]]
-        # vol = vol[..., :280, :880]
-        # vol = vol[..., :120*2, :120 * 7]
-        _vol = vol.shape
-        print(('seed: %s' % seed))
-        print(('mpath: %s' % mpath))
-        print(('volume size: (%s, %s, %s)' % (
-            _vol[0],
-            _vol[1],
-            _vol[2])))
 
-        # 2. Predict its membranes
-        # volume size: (60, 290, 900)
-        predict_membranes = True
-        # if os.path.exists("{}.npy".format(mpath)):
-        #     predict_membranes = False
-        if predict_membranes:
-            membrane_model_shape = model_shape
-            # model_shape = (config.shape * path_extent)
-            if 1:
-                membranes = fgru.main(
-                    test=vol,
-                    evaluate=True,
-                    adabn=True,
-                    gpu_device='/gpu:0',
-                    test_input_shape=np.concatenate((
-                        membrane_model_shape, [1])).tolist(),
-                    test_label_shape=np.concatenate((
-                        membrane_model_shape, [3])).tolist(),
-                    checkpoint=config.membrane_ckpt)
-                membranes = np.concatenate(membranes, 0).max(-1)  # mean
+    # Resize and process the volume
+    vol = resize(vol.transpose(1, 2, 0), res_shape, anti_aliasing=True, preserve_range=True, order=3).transpose(2, 0, 1)
+    vol = vol.astype(np.float32) / 255.
+    vol = vol[:z_shape]
+    if crop_shape is not None:
+        vol = vol[:, :crop_shape[0], :crop_shape[1]]
+    _vol = vol.shape
+    print(('seed: %s' % seed))
+    print(('mpath: %s' % mpath))
+    print(('volume size: (%s, %s, %s)' % (
+        _vol[0],
+        _vol[1],
+        _vol[2])))
 
-            vol = vol.transpose(ffn_transpose)  # ).astype(np.uint8)
-            membranes = np.stack(
-                (vol, membranes), axis=-1).astype(np.float32) * 255.
-            np.save(mpath, membranes)
-            # from matplotlib import pyplot as plt; slc = 32;plt.subplot(121);plt.imshow(vol[slc]);plt.subplot(122);plt.imshow(membranes[slc, ..., 1]);plt.show()
-            print('Saved membrane volume to %s' % mpath)
+    # 2. Predict its membranes
+    membranes = fgru.main(
+        test=vol,
+        evaluate=True,
+        adabn=True,
+        gpu_device='/gpu:0',
+        test_input_shape=np.concatenate((
+            model_shape, [1])).tolist(),
+        test_label_shape=np.concatenate((
+            model_shape, [3])).tolist(),
+        checkpoint=config.membrane_ckpt)
+    membranes = np.concatenate(membranes, 0).max(-1)  # mean
+
+    vol = vol.transpose(ffn_transpose)  # ).astype(np.uint8)
+    membranes = np.stack(
+        (vol, membranes), axis=-1).astype(np.float32) * 255.
+    np.save(mpath, membranes)
+    # from matplotlib import pyplot as plt; slc = 32;plt.subplot(121);plt.imshow(vol[slc]);plt.subplot(122);plt.imshow(membranes[slc, ..., 1]);plt.show()
+    print('Saved membrane volume to %s' % mpath)
+    return membranes
 
 
 if __name__ == '__main__':
@@ -302,6 +315,24 @@ if __name__ == '__main__':
         default='14,15,18',
         help='Center volume for segmentation.')
     parser.add_argument(
+        '--voxel_size',
+        dest='voxel_size',
+        type=str,
+        default='5,5,40',
+        help='Center volume for segmentation.')
+    parser.add_argument(
+        '--res_shape',
+        dest='res_shape',
+        type=str,
+        default=None,
+        help='Shape for resizing x/y.')
+    parser.add_argument(
+        '--z_shape',
+        dest='z_shape',
+        type=int,
+        default=128,
+        help='Number of z-slices to segment.')
+    parser.add_argument(
         '--seed_policy',
         dest='seed_policy',
         type=str,
@@ -313,12 +344,6 @@ if __name__ == '__main__':
         type=str,
         default='1,2,6',
         help='Provide extent of segmentation in 128^3 volumes.')
-    parser.add_argument(
-        '--move_threshold',
-        dest='move_threshold',
-        type=float,
-        default=0.8,  # 0.8
-        help='Movement threshold. Higher is more likely to move.')
     parser.add_argument(
         '--segment_threshold',
         dest='segment_threshold',
@@ -332,30 +357,10 @@ if __name__ == '__main__':
         default=None,
         help='Membrane chunking along z axis.')
     parser.add_argument(
-        '--validate',
-        dest='validate',
-        action='store_true',
-        help='Force berson validation dataset.')
-    parser.add_argument(
         '--rotate',
         dest='rotate',
         action='store_true',
         help='Rotate the input data.')
-    parser.add_argument(
-        '--membrane_only',
-        dest='membrane_only',
-        action='store_true',
-        help='Only process membranes.')
-    parser.add_argument(
-        '--segment_only',
-        dest='segment_only',
-        action='store_true',
-        help='Only process segments.')
-    parser.add_argument(
-        '--merge_segment_only',
-        dest='merge_segment_only',
-        action='store_true',
-        help='Only process merge segments.')
     args = parser.parse_args()
     start = time.time()
     get_segmentation(**vars(args))

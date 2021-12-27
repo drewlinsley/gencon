@@ -14,11 +14,11 @@ from membrane.membrane_ops import mtraining as training
 # from ops import metrics
 # from membrane.membrane_ops import data_structure
 # from membrane.membrane_ops import data_loader_queues as data_loader
-from ops import data_to_tfrecords
+from utils import data_to_tfrecords
 from membrane.membrane_ops import optimizers
 from membrane.membrane_ops import tf_fun
 from membrane.membrane_ops import gradients
-from ops import data_loader
+from utils import data_loader
 
 
 WEIGHT_DECAY = 1e-4

@@ -224,14 +224,14 @@ def get_segmentation(
     assert segment_threshold is not None
     path_extent = np.asarray([int(x) for x in path_extent.split(",")])
     model_shape = (config.shape * path_extent)
-    model_shape = (160, 360, 360)  # temp
-    model_shape = (128, 200, 200)
+    model_shape = (280, 280, 280)
     mpath = "/localscratch/middle_cube_membranes_for_ffn_training.npy"
 
     if quick:
         config.ffn_ckpt = os.path.join(config.read_project_directory, 'ffn_ckpts/64_fov/ts_1/model.ckpt-1632105')  # nopep8
+        config.ffn_ckpt = os.path.join(config.read_project_directory, 'ffn_ckpts/64_fov/ts_1/model.ckpt-1150159')
         config.membrane_ckpt = os.path.join(config.read_project_directory, 'checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/fixed_model_137000.ckpt-137000')  # nopep8
-        config.membrane_ckpt = os.path.join(config.read_project_directory, 'checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/fixed_model_1150159.ckpt-1150159')  # nopep8
+        # config.membrane_ckpt = os.path.join(config.read_project_directory, 'checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/fixed_model_1150159.ckpt-1150159')  # nopep8
     else:
         config.ffn_ckpt = os.path.join(config.read_project_directory, 'ffn_ckpts/64_fov/feedback_hgru_v5_3l_notemp_f_v4_berson4x_w_inf_memb_r0/model.ckpt-225915')  # nopep8
         config.ffn_model = 'feedback_hgru_v5_3l_notemp_f_v4'  # 2382.443995
@@ -263,7 +263,7 @@ def get_segmentation(
                 move_threshold: %s
                 min_boundary_dist { x: 1 y: 1 z: 1}
                 segment_threshold: %s
-                min_segment_size: 1000
+                min_segment_size: 256
             }''' % (
             mpath,
             seed_policy,
@@ -290,7 +290,7 @@ def get_segmentation(
                 move_threshold: %s
                 min_boundary_dist { x: 1 y: 1 z: 1}
                 segment_threshold: %s
-                min_segment_size: 1000
+                min_segment_size: 256
             }''' % (
             mpath,
             seed_policy,
@@ -307,12 +307,10 @@ def get_segmentation(
     _, segments, probabilities = runner.run(
         (0, 0, 0),
         (model_shape[0], model_shape[1], model_shape[2]))
+    import pdb;pdb.set_trace()
+    res_shape = [1152, 1152, 384]
+    vol = resize(segments.transpose(1, 2, 0), res_shape, anti_aliasing=True, preserve_range=True, order=3).transpose(2, 0, 1)
 
-    # Copy the nii file to the appropriate path
-    # Try to pull segments and probability from runner
-    # segments = np.load(
-    #     os.path.join(seg_dir, '0', '0', 'seg-0_0_0.npz'))['segmentation']
-    print("DONE")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -350,7 +348,7 @@ if __name__ == '__main__':
         '--segment_threshold',
         dest='segment_threshold',
         type=float,
-        default=0.5,  # 0.6
+        default=0.4,  # 0.5
         help='Segment threshold..')
     parser.add_argument(
         '--membrane_slice',

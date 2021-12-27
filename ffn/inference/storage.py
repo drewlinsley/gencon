@@ -62,9 +62,15 @@ def clean_and_merge(
   # np.savez('test', shifts=shifts, old_seg=old_seg, segments=segments)
   if old_seg is not None:
     segments = segmentation.drew_consensus(segs=segments, olds=old_seg)
-  segments = label(segments, connectivity=1, background=0)
-  segments = remove_small_objects(segments, min_size=threshold, connectivity=1)
-  segments = db.adjust_max_id(segments)
+  # segments = label(segments, connectivity=1, background=0)
+  try:
+      import cc3d
+      segments = cc3d.connected_components(segments, connectivity=26)
+  except:
+      print("COULD NOT IMPORT CC3d; falling back to label to clean up")
+      segments = label(segments, connectivity=1, background=0)
+  segments = remove_small_objects(segments, min_size=threshold, connectivity=26)
+  # segments = db.adjust_max_id(segments)
   # labeled_segments = morphology.remove_small_objects(
   #   segments,
   #   min_size=threshold)
