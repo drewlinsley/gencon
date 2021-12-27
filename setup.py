@@ -3,6 +3,7 @@ import os
 from db import credentials
 from utils import logger
 from config import Config
+from db.db import initialize_database
 
 
 """e.g. python setup.py install"""
@@ -41,4 +42,8 @@ os.popen(
         params['database'],
         params['user']), 'w').write(sys_password)
 log.info('Created DB.')
+initialize_database()
+print("Initialized DB.")
+
+
 

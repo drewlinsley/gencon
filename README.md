@@ -1,6 +1,8 @@
 # Install postgres for managing volume segmentations/curations
 1. sudo apt update
 2. sudo apt install postgresql postgresql-contrib
+3. `cp db/credentials.py.template db/credentials.py` (then edit the new file).
+4. `cp config.py.template config.py` (then edit the new file)
 
 # Install python packages for segmenting and curating volumes
 1. `sudo apt-get install libpq-dev python-dev`
@@ -22,5 +24,6 @@ These steps can be automated by running `bash process_rachel_data.sh`
 
 
 # Access the DB
-- psql connectomics -h 127.0.0.1 -d connectomics
+- psql <db_user> -h 127.0.0.1 -d <db_name>
+- psql wong -h 127.0.0.1 -d wong
 

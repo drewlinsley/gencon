@@ -9,16 +9,12 @@ from utils import logger
 from config import Config
 
 
-VOLUME = '/media/data/connectomics/mag1/'
-GLOB_MATCH = os.path.join(VOLUME, '**', '**', '**', '*.raw')
-
-
 def main(
         init_db=False,
         reset_coordinates=False,
         reset_priority=False,
         reset_config=False,
-        populate_db=False,
+        populate_db=None,
         get_progress=False,
         berson_correction=True,
         priority_list=None):
@@ -37,6 +33,8 @@ def main(
 
     if populate_db:
         # Fill the DB with a coordinates + global config
+        import pdb;pdb.set_trace()
+        print("Need to add coords here")
         assert config.coord_path is not None
         if os.path.exists(config.coord_path):
             coords = np.load(config.coord_path)
