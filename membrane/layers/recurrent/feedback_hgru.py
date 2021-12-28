@@ -2,12 +2,9 @@
 import warnings
 import numpy as np
 import tensorflow as tf
-try:
-    tf.placeholder
-except:
-    import tensorflow.compat.v1 as tf
-    tf.disable_v2_behavior()
-from ops import initialization
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
+from utils import initialization
 from layers.feedforward.pooling import max_pool3d
 
 

@@ -1,11 +1,9 @@
 import os
 import time
 import numpy as np
-try:
-    tf.placeholder
-except:
-    import tensorflow.compat.v1 as tf
-    tf.disable_v2_behavior()
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
+
 from datetime import datetime
 from tqdm import tqdm
 from membrane.utils import logger

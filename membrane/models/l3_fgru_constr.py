@@ -2,11 +2,9 @@
 import os
 import argparse
 import numpy as np
-try:
-    tf.placeholder
-except:
-    import tensorflow.compat.v1 as tf
-    tf.disable_v2_behavior()
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
+
 from membrane.membrane_ops import mops as model_fun
 from membrane.layers.feedforward import conv
 from membrane.layers.feedforward import normalization
@@ -74,6 +72,7 @@ def experiment_params(
 
 def build_model(data_tensor, reuse, training, output_channels, scope_name=None):
     """Create the hgru from Learning long-range..."""
+    output_channels = 12
     filters = [28]
     kernel_size = [1, 5, 5]
     if scope_name is None:
@@ -114,7 +113,7 @@ def build_model(data_tensor, reuse, training, output_channels, scope_name=None):
             bottom=h2,
             name='hgru_bn',
             fused=True,
-            renorm=True,
+            renorm=False,  # True,
             training=training)
         with tf.variable_scope('out_embedding', reuse=reuse):
             out_emb = conv.conv3d_layer(

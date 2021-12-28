@@ -2,7 +2,9 @@
 import os
 import argparse
 import numpy as np
-import tensorflow as tf
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
+
 from membrane.membrane_ops import mops as model_fun
 from membrane.layers.feedforward import conv
 from membrane.layers.feedforward import normalization

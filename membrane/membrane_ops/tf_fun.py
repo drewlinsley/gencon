@@ -3,13 +3,9 @@ import re
 import sys
 import json
 import numpy as np
-import tensorflow as tf
-try:
-    tf.placeholder
-except:
-    import tensorflow.compat.v1 as tf
-    tf.disable_v2_behavior()
 from scipy import signal
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
 
 
 # Hack to put BSDS on the path

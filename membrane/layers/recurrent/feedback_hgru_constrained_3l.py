@@ -1,14 +1,11 @@
 """Contextual model with partial filters."""
 import warnings
 import numpy as np
-import tensorflow as tf
-# try:
-#     tf.placeholder
-# except:
-#     import tensorflow.compat.v1 as tf
-#     tf.disable_v2_behavior()
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
 from membrane.membrane_ops import initialization
 from membrane.layers.feedforward.pooling import max_pool3d
+from tf_slim.layers import batch_norm
 
 
 # Dependency for symmetric weight ops is in models/layers/ff.py
@@ -571,7 +568,7 @@ class hGRU(object):
         with tf.variable_scope(
                 '%s/g1_bn' % var_scope,
                 reuse=self.scope_reuse) as scope:
-            g1_intermediate = tf.contrib.layers.batch_norm(
+            g1_intermediate = batch_norm(
                 inputs=g1_intermediate + gain_bias,
                 scale=True,
                 center=False,
@@ -609,7 +606,7 @@ class hGRU(object):
         with tf.variable_scope(
                 '%s/g2_bn' % var_scope,
                 reuse=self.scope_reuse) as scope:
-            g2_intermediate = tf.contrib.layers.batch_norm(
+            g2_intermediate = batch_norm(
                 inputs=g2_intermediate + mix_bias,
                 scale=True,
                 center=False,
@@ -670,7 +667,7 @@ class hGRU(object):
         with tf.variable_scope(
                 '%s/c1_bn' % var_scope,
                 reuse=self.scope_reuse) as scope:
-            c1 = tf.contrib.layers.batch_norm(
+            c1 = batch_norm(
                 inputs=c1,
                 scale=True,
                 center=False,
@@ -700,7 +697,7 @@ class hGRU(object):
         with tf.variable_scope(
                 '%s/c2_bn' % var_scope,
                 reuse=self.scope_reuse) as scope:
-            c2 = tf.contrib.layers.batch_norm(
+            c2 = batch_norm(
                 inputs=c2,
                 scale=True,
                 center=False,
@@ -753,7 +750,7 @@ class hGRU(object):
             with tf.variable_scope(
                     'l1_h2_bn%s' % tag,
                     reuse=self.scope_reuse) as scope:
-                l1_h2 = tf.contrib.layers.batch_norm(
+                l1_h2 = batch_norm(
                     inputs=l1_h2,
                     scale=True,
                     center=False,
@@ -793,7 +790,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         'l1_h2_bn_ff_%s%s' % (idx, tag),
                         reuse=self.scope_reuse) as scope:
-                    processed_l1_h2 = tf.contrib.layers.batch_norm(
+                    processed_l1_h2 = batch_norm(
                         inputs=processed_l1_h2,
                         scale=True,
                         center=True,
@@ -822,7 +819,7 @@ class hGRU(object):
             with tf.variable_scope(
                     'l2_h2_bn%s' % tag,
                     reuse=self.scope_reuse) as scope:
-                l2_h2 = tf.contrib.layers.batch_norm(
+                l2_h2 = batch_norm(
                     inputs=l2_h2,
                     scale=True,
                     center=False,
@@ -862,7 +859,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         'l2_h2_bn_ff_%s%s' % (idx, tag),
                         reuse=self.scope_reuse) as scope:
-                    processed_l2_h2 = tf.contrib.layers.batch_norm(
+                    processed_l2_h2 = batch_norm(
                         inputs=processed_l2_h2,
                         scale=True,
                         center=True,
@@ -891,7 +888,7 @@ class hGRU(object):
             with tf.variable_scope(
                     'l3_h2_bn%s' % tag,
                     reuse=self.scope_reuse) as scope:
-                l3_h2 = tf.contrib.layers.batch_norm(
+                l3_h2 = batch_norm(
                     inputs=l3_h2,
                     scale=True,
                     center=False,
@@ -919,7 +916,7 @@ class hGRU(object):
             with tf.variable_scope(
                     'l2_fb_bn%s' % tag,
                     reuse=self.scope_reuse) as scope:
-                fb_act_2 = tf.contrib.layers.batch_norm(
+                fb_act_2 = batch_norm(
                     inputs=fb_act_2,
                     scale=True,
                     center=False,
@@ -954,7 +951,7 @@ class hGRU(object):
             with tf.variable_scope(
                     'l1_fb_bn%s' % tag,
                     reuse=self.scope_reuse) as scope:
-                fb_act_1 = tf.contrib.layers.batch_norm(
+                fb_act_1 = batch_norm(
                     inputs=fb_act_1,
                     scale=True,
                     center=False,

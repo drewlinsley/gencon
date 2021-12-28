@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
+from tensorflow.compat import v1 as tf
 
 from tensorflow.python.util import deprecation
 from . import optimizer_functional

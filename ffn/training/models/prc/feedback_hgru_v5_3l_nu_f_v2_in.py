@@ -1,10 +1,12 @@
 """Contextual model with partial filters."""
 import warnings
 import numpy as np
-import tensorflow as tf
+from tensorflow.compat import v1 as tf
 from . import initialization
 from .pooling import max_pool3d
 from . import gradients
+from tf_slim.layers import normalization
+
 
 # Dependency for symmetric weight ops is in models/layers/ff.py
 class hGRU(object):
@@ -698,7 +700,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         '%s/g1a_bn' % var_scope,
                         reuse=self.scope_reuse) as scope:
-                    g1a_intermediate = tf.contrib.layers.instance_norm(
+                    g1a_intermediate = normalization.instance_norm(
                         inputs=g1a_intermediate,
                         scale=True,
                         center=False,
@@ -707,7 +709,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                g1a_intermediate = tf.contrib.layers.instance_norm(
+                g1a_intermediate = normalization.instance_norm(
                     inputs=g1a_intermediate,
                     scale=True,
                     center=False,
@@ -728,7 +730,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         '%s/g1b_bn' % var_scope,
                         reuse=self.scope_reuse) as scope:
-                    g1b_intermediate = tf.contrib.layers.instance_norm(
+                    g1b_intermediate = normalization.instance_norm(
                         scale=True,
                         center=False,
                         param_initializers=self.param_initializer,
@@ -736,7 +738,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                g1b_intermediate = tf.contrib.layers.instance_norm(
+                g1b_intermediate = normalization.instance_norm(
                     inputs=g1b_intermediate,
                     scale=True,
                     center=False,
@@ -776,7 +778,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         '%s/g2_bn' % var_scope,
                         reuse=self.scope_reuse) as scope:
-                    g2_intermediate = tf.contrib.layers.instance_norm(
+                    g2_intermediate = normalization.instance_norm(
                         inputs=g2_intermediate,
                         scale=True,
                         center=False,
@@ -785,7 +787,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                g2_intermediate = tf.contrib.layers.instance_norm(
+                g2_intermediate = normalization.instance_norm(
                     inputs=g2_intermediate,
                     scale=True,
                     center=False,
@@ -835,7 +837,7 @@ class hGRU(object):
             with tf.variable_scope(
                     '%s/c1_bn' % var_scope,
                     reuse=self.scope_reuse) as scope:
-                c1 = tf.contrib.layers.instance_norm(
+                c1 = normalization.instance_norm(
                     inputs=c1,
                     scale=True,
                     center=False,
@@ -844,7 +846,7 @@ class hGRU(object):
                     reuse=self.scope_reuse,
                     trainable=self.train)
         else:
-            c1 = tf.contrib.layers.instance_norm(
+            c1 = normalization.instance_norm(
                 inputs=c1,
                 scale=True,
                 center=False,
@@ -866,7 +868,7 @@ class hGRU(object):
             with tf.variable_scope(
                     '%s/c2_bn' % var_scope,
                     reuse=self.scope_reuse) as scope:
-                c2 = tf.contrib.layers.instance_norm(
+                c2 = normalization.instance_norm(
                     inputs=c2,
                     scale=True,
                     center=False,
@@ -875,7 +877,7 @@ class hGRU(object):
                     reuse=self.scope_reuse,
                     trainable=self.train)
         else:
-            c2 = tf.contrib.layers.instance_norm(
+            c2 = normalization.instance_norm(
                 inputs=c2,
                 scale=True,
                 center=False,
@@ -924,7 +926,7 @@ class hGRU(object):
             if self.bn_reuse:
                 with tf.variable_scope(
                             'hgru_%s/out_bn' % idx, reuse=self.scope_reuse) as scope:
-                    ff0 = tf.contrib.layers.instance_norm(
+                    ff0 = normalization.instance_norm(
                         inputs=l0_h2,
                         scale=True,
                         center=False,
@@ -933,7 +935,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff0 = tf.contrib.layers.instance_norm(
+                ff0 = normalization.instance_norm(
                     inputs=l0_h2,
                     scale=True,
                     center=False,
@@ -962,7 +964,7 @@ class hGRU(object):
                 with tf.variable_scope(
                     'ff_%s/pre-conv' % idx,
                     reuse=self.scope_reuse) as scope:
-                    ff0 = tf.contrib.layers.instance_norm(
+                    ff0 = normalization.instance_norm(
                         inputs=ff0,
                         scale=True,
                         center=False,
@@ -971,7 +973,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff0 = tf.contrib.layers.instance_norm(
+                ff0 = normalization.instance_norm(
                     inputs=ff0,
                     scale=True,
                     center=False,
@@ -1002,7 +1004,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         'ff_%s/post-conv' % idx,
                         reuse=self.scope_reuse) as scope:
-                    ff0 = tf.contrib.layers.instance_norm(
+                    ff0 = normalization.instance_norm(
                         inputs=ff0,
                         scale=True,
                         center=False,
@@ -1011,7 +1013,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff0 = tf.contrib.layers.instance_norm(
+                ff0 = normalization.instance_norm(
                     inputs=ff0,
                     scale=True,
                     center=False,
@@ -1053,7 +1055,7 @@ class hGRU(object):
             if self.bn_reuse:
                 with tf.variable_scope(
                             'hgru_%s/out_bn' % idx, reuse=self.scope_reuse) as scope:
-                    ff1 = tf.contrib.layers.instance_norm(
+                    ff1 = normalization.instance_norm(
                         inputs=l1_h2,
                         scale=True,
                         center=False,
@@ -1062,7 +1064,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff1 = tf.contrib.layers.instance_norm(
+                ff1 = normalization.instance_norm(
                     inputs=l1_h2,
                     scale=True,
                     center=False,
@@ -1091,7 +1093,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         'ff_%s/pre-conv' % idx,
                         reuse=self.scope_reuse) as scope:
-                    ff1 = tf.contrib.layers.instance_norm(
+                    ff1 = normalization.instance_norm(
                         inputs=ff1,
                         scale=True,
                         center=False,
@@ -1100,7 +1102,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff1 = tf.contrib.layers.instance_norm(
+                ff1 = normalization.instance_norm(
                     inputs=ff1,
                     scale=True,
                     center=False,
@@ -1130,7 +1132,7 @@ class hGRU(object):
                 with tf.variable_scope(
                     'ff_%s/post-conv' % idx,
                     reuse=self.scope_reuse) as scope:
-                    ff1 = tf.contrib.layers.instance_norm(
+                    ff1 = normalization.instance_norm(
                         inputs=ff1,
                         scale=True,
                         center=False,
@@ -1139,7 +1141,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff1 = tf.contrib.layers.instance_norm(
+                ff1 = normalization.instance_norm(
                     inputs=ff1,
                     scale=True,
                     center=False,
@@ -1181,7 +1183,7 @@ class hGRU(object):
             if self.bn_reuse:
                 with tf.variable_scope(
                             'hgru_%s/out_bn' % idx, reuse=self.scope_reuse) as scope:
-                    ff2 = tf.contrib.layers.instance_norm(
+                    ff2 = normalization.instance_norm(
                         inputs=l2_h2,
                         scale=True,
                         center=False,
@@ -1190,7 +1192,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff2 = tf.contrib.layers.instance_norm(
+                ff2 = normalization.instance_norm(
                     inputs=l2_h2,
                     scale=True,
                     center=False,
@@ -1218,7 +1220,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         'ff_%s/pre-conv' % idx,
                         reuse=self.scope_reuse) as scope:
-                    ff2 = tf.contrib.layers.instance_norm(
+                    ff2 = normalization.instance_norm(
                         inputs=ff2,
                         scale=True,
                         center=False,
@@ -1227,7 +1229,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff2 = tf.contrib.layers.instance_norm(
+                ff2 = normalization.instance_norm(
                     inputs=ff2,
                     scale=True,
                     center=False,
@@ -1257,7 +1259,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         'ff_%s/post-conv' % idx,
                         reuse=self.scope_reuse) as scope:
-                    ff2 = tf.contrib.layers.instance_norm(
+                    ff2 = normalization.instance_norm(
                         inputs=ff2,
                         scale=True,
                         center=False,
@@ -1266,7 +1268,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                ff2 = tf.contrib.layers.instance_norm(
+                ff2 = normalization.instance_norm(
                     inputs=ff2,
                     scale=True,
                     center=False,
@@ -1301,7 +1303,7 @@ class hGRU(object):
                 with tf.variable_scope(
                         'fb_%s' % idx,
                         reuse=self.scope_reuse) as scope:
-                    fb2 = tf.contrib.layers.instance_norm(
+                    fb2 = normalization.instance_norm(
                         inputs=fb2,
                         scale=True,
                         center=False,
@@ -1310,7 +1312,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                fb2 = tf.contrib.layers.instance_norm(
+                fb2 = normalization.instance_norm(
                     inputs=fb2,
                     scale=True,
                     center=False,
@@ -1337,7 +1339,7 @@ class hGRU(object):
                 with tf.variable_scope(
                     'fb_%s' % idx,
                     reuse=self.scope_reuse) as scope:
-                    fb1 = tf.contrib.layers.instance_norm(
+                    fb1 = normalization.instance_norm(
                         inputs=fb1,
                         scale=True,
                         center=False,
@@ -1346,7 +1348,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                fb1 = tf.contrib.layers.instance_norm(
+                fb1 = normalization.instance_norm(
                     inputs=fb1,
                     scale=True,
                     center=False,
@@ -1373,7 +1375,7 @@ class hGRU(object):
                 with tf.variable_scope(
                     'fb_%s' % idx,
                     reuse=self.scope_reuse) as scope:
-                    fb0 = tf.contrib.layers.instance_norm(
+                    fb0 = normalization.instance_norm(
                         inputs=fb0,
                         scale=True,
                         center=False,
@@ -1382,7 +1384,7 @@ class hGRU(object):
                         reuse=self.scope_reuse,
                         trainable=self.train)
             else:
-                fb0 = tf.contrib.layers.instance_norm(
+                fb0 = normalization.instance_norm(
                     inputs=fb0,
                     scale=True,
                     center=False,
@@ -1405,9 +1407,9 @@ class hGRU(object):
 
     def compute_shape(self, in_length, stride):
         if in_length % stride == 0:
-            return in_length/stride
+            return int(in_length/stride)
         else:
-            return in_length/stride + 1
+            return int(in_length/stride + 1)
 
     def build(self, x, seed):
         """Run the backprop version of the Circuit."""

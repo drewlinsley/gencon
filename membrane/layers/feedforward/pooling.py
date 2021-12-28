@@ -1,9 +1,5 @@
-import tensorflow as tf
-try:
-    tf.placeholder
-except:
-    import tensorflow.compat.v1 as tf
-    tf.disable_v2_behavior()
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
 
 
 def max_pool(

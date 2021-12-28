@@ -1,6 +1,7 @@
 import math
 import numpy as np
-import tensorflow as tf
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
 from scipy import stats
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import control_flow_ops

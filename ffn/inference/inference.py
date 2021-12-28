@@ -32,9 +32,9 @@ from scipy.special import expit
 from scipy.special import logit
 from skimage import transform
 
-import tensorflow as tf
+from tensorflow.compat import v1 as tf
 
-from tensorflow import gfile
+from tensorflow.compat.v1 import gfile
 from . import align
 from . import executor
 from . import inference_pb2
@@ -954,11 +954,11 @@ class Runner(object):
       self.model.saver.restore(self.session, checkpoint_path)
       logging.info('Checkpoint loaded.')
 
-  def start(self, request, batch_size=1, exec_cls=None, topup=None, reuse=False, tag=None):
+  def start(self, request, vol, batch_size=1, exec_cls=None, topup=None, reuse=False, tag=None):
     """Opens input volumes and initializes the FFN."""
     self.request = request
     self.topup = topup
-    assert self.request.segmentation_output_dir
+    # assert self.request.segmentation_output_dir
 
     logging.debug('Received request:\n%s', request)
 
@@ -968,9 +968,10 @@ class Runner(object):
     with timer_counter(self.counters, 'volstore-open'):
       # Disabling cache compression can improve access times by 20-30%
       # as of Aug 2016.
-      self._image_volume, _ = storage.decorated_volume(
-          request.image, cache_max_bytes=int(1e8),
-          cache_compression=False)
+      # self._image_volume, _ = storage.decorated_volume(
+      #     request.image, cache_max_bytes=int(1e8),
+      #     cache_compression=False)
+      self._image_volume = vol
       assert self._image_volume is not None
 
       if request.HasField('init_segmentation'):

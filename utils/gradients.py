@@ -1,4 +1,5 @@
-import tensorflow as tf
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn_ops
 

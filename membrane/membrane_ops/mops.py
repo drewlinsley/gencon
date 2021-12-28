@@ -1,14 +1,9 @@
 
 import os
 import numpy as np
-import tensorflow as tf
-try:
-    tf.placeholder
-except:
-    import tensorflow.compat.v1 as tf
-    tf.disable_v2_behavior()
+from tensorflow.compat import v1 as tf
+tf.disable_v2_behavior()
 
-# from config import Config
 from membrane.utils import py_utils
 from membrane.membrane_ops import mtraining as training
 # from ops import metrics

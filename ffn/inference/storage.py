@@ -28,9 +28,7 @@ import tempfile
 
 import h5py
 import numpy as np
-from db import db
-
-from tensorflow import gfile
+from tensorflow.compat.v1 import gfile
 from . import align
 from . import segmentation
 from ..utils import bounding_box
