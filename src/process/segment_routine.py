@@ -8,10 +8,11 @@ from config import Config
 
 
 def main(
-        ds_input="/media/data_cifs/connectomics/cubed_mag1/pbtest/wong_1",  # "/localscratch/wong_1",
+        # ds_input="/media/data_cifs/connectomics/cubed_mag1/pbtest/wong_1",  # "/localscratch/wong_1",
+        ds_input="/cifs/data/tserre/CLPS_Serre_Lab/connectomics/cubed_mag1/pbtest/wong_1",
         ds_layer="color",
-        # image_shape=[280, 4740, 4740],  # z/y/x
-        image_shape=[280, 1152, 1152],  # z/y/x
+        image_shape=[280, 4740, 4740],  # z/y/x
+        # image_shape=[280, 1152, 1152],  # z/y/x
         resize_mod=[1, 4.114, 4.114]):
     """Perform 0-shot membrane and neurite segmentation on a volume."""
 
@@ -45,10 +46,10 @@ def main(
     vol_mem = membrane_segmentation.get_segmentation(
         vol=res_cube_in,
         membrane_ckpt=membrane_ckpt,
-        membrane_slice=[140, 280, 280],  # [140, 384, 384],
+        membrane_slice=[280, 384, 384],  # [140, 384, 384],
         normalize=True)
     # vol_mem *= 255.
-    from matplotlib import pyplot as plt;plt.subplot(121);plt.imshow(vol_mem[32, ..., 0]);plt.subplot(122);plt.imshow(vol_mem[32, ..., 1]);plt.show()
+    # from matplotlib import pyplot as plt;plt.subplot(121);plt.imshow(vol_mem[32, ..., 0]);plt.subplot(122);plt.imshow(vol_mem[32, ..., 1]);plt.show()
 
     # Segment neurites
     ffn_ckpt = config.ffn_ckpt
@@ -60,8 +61,8 @@ def main(
 
     # Resize and transpose segments
     # segs = resize(seg.transpose(1, 2, 0), image_shape[::-1][:-1], anti_aliasing=False, preserve_range=True, order=1)
-    segs = seg.transpose(1, 2, 0)  # Keep low-res for post-processing
-    from matplotlib import pyplot as plt;plt.subplot(131);plt.imshow(cube_in[..., 32]);plt.subplot(132);plt.imshow(vol_mem[32]);plt.subplot(133);plt.imshow(segs[..., 32]);plt.show()
+    segs = segs.transpose(1, 2, 0)  # Keep low-res for post-processing
+    # from matplotlib import pyplot as plt;plt.subplot(131);plt.imshow(cube_in[..., 32]);plt.subplot(132);plt.imshow(vol_mem[32]);plt.subplot(133);plt.imshow(segs[..., 32]);plt.show()
 
     # Save segs and mems
     mem_path = config.mem_path_str.format(x, y, z, x, y, z)

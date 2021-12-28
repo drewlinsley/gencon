@@ -3,7 +3,6 @@ import time
 import logging
 import argparse
 import itertools
-import nibabel as nib
 import numpy as np
 from config import Config
 from google.protobuf import text_format
