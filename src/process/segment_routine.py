@@ -11,7 +11,7 @@ def main(
         # ds_input="/media/data_cifs/connectomics/cubed_mag1/pbtest/wong_1",  # "/localscratch/wong_1",
         ds_input="/cifs/data/tserre/CLPS_Serre_Lab/connectomics/cubed_mag1/pbtest/wong_1",
         ds_layer="color",
-        image_shape=[280, 4740, 4740],  # z/y/x
+        image_shape=[384, 4740, 4740],  # z/y/x
         # image_shape=[280, 1152, 1152],  # z/y/x
         resize_mod=[1, 4.114, 4.114]):
     """Perform 0-shot membrane and neurite segmentation on a volume."""
@@ -46,7 +46,7 @@ def main(
     vol_mem = membrane_segmentation.get_segmentation(
         vol=res_cube_in,
         membrane_ckpt=membrane_ckpt,
-        membrane_slice=[280, 384, 384],  # [140, 384, 384],
+        membrane_slice=[384, 512, 512],  # [140, 384, 384],
         normalize=True)
     # vol_mem *= 255.
     # from matplotlib import pyplot as plt;plt.subplot(121);plt.imshow(vol_mem[32, ..., 0]);plt.subplot(122);plt.imshow(vol_mem[32, ..., 1]);plt.show()
@@ -76,3 +76,4 @@ def main(
 
 if __name__ == '__main__':
     main()
+
