@@ -1,0 +1,12 @@
+# Config for processing W-Q's volume
+
+name: "W-Q"
+scale: [5, 5, 50]
+token: ???
+db_name: "wq"
+img_path: "/cifs/data/tserre/CLPS_Serre_Lab/connectomics/cubed_mag1/pbtest/wong_1"
+img_layer: "color"
+img_vol_shape: [240, 4740, 4740]
+resize_mod: [1., 4.114, 4.114]
+membrane_slice: [240, 384, 384]
+
