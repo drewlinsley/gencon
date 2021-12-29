@@ -1,10 +1,8 @@
 import os
 import time
-import logging
 import argparse
 import itertools
 import numpy as np
-from config import Config
 from google.protobuf import text_format
 from ffn.inference import inference
 from ffn.inference import inference_pb2
@@ -17,10 +15,6 @@ from copy import deepcopy
 from tqdm import tqdm
 from skimage.transform import resize
 import functools
-
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 
 def get_segmentation(

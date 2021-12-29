@@ -14,13 +14,13 @@ x, y, z = 0, 0, 0
 scale = (5, 5, 50)
 seg_dtype = np.uint32
 mem_dtype = np.uint8
-ds_input = "/cifs/data/tserre/CLPS_Serre_Lab/connectomics/cubed_mag1/pbtest/wong_1"
+ds_input = "/media/data_cifs/connectomics/cubed_mag1/pbtest/wong_1"
 image_shape = [240, 4740, 4740]
 with wk.webknossos_context(url="https://webknossos.org", token=config.token):
-    img_mem = np.load("/cifs/data/tserre_lrs/projects/prj_connectomics/wong/mag1_membranes/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}.npy".format(x, y, z, x, y, z))
+    img_mem = np.load("/media/data_cifs/projects/prj_connectomics/wong/mag1_membranes/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}.npy".format(x, y, z, x, y, z))
     # img = img_mem[..., 0]
     mem = img_mem[..., 1].astype(mem_dtype).transpose(1, 2, 0)
-    seg = np.load("/cifs/data/tserre_lrs/projects/prj_connectomics/wong/mag1_segs/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}.npy".format(x, y, z, x, y, z))
+    seg = np.load("/media/data_cifs/projects/prj_connectomics/wong/mag1_segs/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}.npy".format(x, y, z, x, y, z))
     seg = rs(seg)[0].astype(seg_dtype)
 
     # Get native resolution
@@ -51,6 +51,7 @@ with wk.webknossos_context(url="https://webknossos.org", token=config.token):
     )
     layer_images.add_mag(1, compress=True).write(img)
     layer_images.downsample()
+    del img, img_mem, mag1, ds_native, layer
 
     # Add membranes
     # mem_config = LayerViewConfiguration(color=[255, 0, 0])
@@ -64,6 +65,7 @@ with wk.webknossos_context(url="https://webknossos.org", token=config.token):
     )
     layer_membranes.add_mag(1, compress=True).write(mem)
     layer_membranes.downsample()
+    del mem
 
     # Add segmentations
     layer_segmentations = ds.add_layer(

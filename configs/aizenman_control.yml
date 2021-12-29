@@ -1,18 +1,18 @@
 # Config for processing W-Q's volume
 
-name: "wong"
+name: "aizenman_control"
 token: ???
-db_name: "wong"
+db_name: "aizenman_control"
 db_ssh_forward: True
 stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
-project_directory: "${stem}/projects/prj_connectomics/wong"
-seg_path_str: "${stem}/projects/prj_connectomics/wong/mag1_segs/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
-mem_path_str: "${stem}/projects/prj_connectomics/wong/mag1_mems/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
+project_directory: "${stem}/projects/prj_connectomics/aizenman_control"
+seg_path_str: "${stem}/projects/prj_connectomics/aizenman_control/mag1_segs/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
+mem_path_str: "${stem}/projects/prj_connectomics/aizenman_control/mag1_mems/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
 membrane_ckpt: "${stem}/connectomics/checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/model_137000.ckpt-137000"
 ffn_ckpt: "${stem}/connectomics/ffn_ckpts/64_fov/ts_1/model.ckpt-1632105"
 ffn_model: "feedback_hgru_v5_3l_notemp_f_v5_ts_1"
 ds:
-    path: "${stem}/connectomics/cubed_mag1/pbtest/wong"
+    path: "${stem}/connectomics/cubed_mag1/pbtest/aizenman_control"
     img_layer: "color"
     scale: [5, 5, 40]
     img_shape: [240, 4740, 4740]

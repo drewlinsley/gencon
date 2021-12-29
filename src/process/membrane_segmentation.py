@@ -1,6 +1,5 @@
 import os
 import time
-import logging
 import argparse
 import itertools
 import numpy as np
@@ -19,8 +18,6 @@ import functools
 from skimage.transform import resize
 
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 AUGS = ['uniform', 'pixel', 'rot270', 'rot90', 'rot180', 'flip_left', 'flip_right', 'depth_flip']  # ['pixel']  # 'depth_flip']  # , 'rot90', 'rot180', 'rot270']
 AUGS = ['flip_left', 'flip_right', 'depth_flip']
 AUGS = []
@@ -29,12 +26,7 @@ TEST_TIME_AUGS = functools.reduce(
     lambda x, y: list(
         itertools.combinations(AUGS, y)) + x,
     list(range(len(AUGS) + 1)), [])[:-1]
-# PAUGS = []
-# for aug in TEST_TIME_AUGS:
-#     t = np.array([1 if 'rot' in x else 0 for x in TEST_TIME_AUGS]).sum()
-#     if t <= 1:
-#         PAUGS += [aug]
-# TEST_TIME_AUGS = PAUGS
+
 PAUGS = deepcopy(TEST_TIME_AUGS)
 for rot in ROTS:
     it_augs = []
@@ -241,5 +233,4 @@ def get_segmentation(
     # from matplotlib import pyplot as plt; slc = 32;plt.subplot(121);plt.imshow(vol[slc]);plt.subplot(122);plt.imshow(membranes[slc, ..., 1]);plt.show()
     # print('Saved membrane volume to %s' % mpath)
     return membranes
-
 

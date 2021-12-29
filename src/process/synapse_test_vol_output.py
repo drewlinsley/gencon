@@ -3,11 +3,8 @@ import time
 import logging
 import argparse
 import numpy as np
-import nibabel as nib
 from db import db
-from config import Config
 from membrane.models import seung_unet3d_adabn_small as unet
-# from membrane.models import l3_fgru_constr as unet
 from membrane.models import l3_fgru_constr_adabn_synapse as unet
 
 from utils.hybrid_utils import pad_zeros, make_dir
@@ -16,11 +13,7 @@ from skimage.feature import peak_local_max
 from skimage.morphology import remove_small_objects, closing, erosion, ball, local_maxima
 from skimage.segmentation import relabel_sequential
 from utils.hybrid_utils import recursive_make_dir as rdirs
-from pull_and_convert_predicted_synapses import convert_synapse_predictions
 from tqdm import tqdm
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 
 
 def non_max_suppression(vol, window, verbose=False):
