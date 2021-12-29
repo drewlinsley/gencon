@@ -8,20 +8,20 @@ class Config:
 
     def __init__(self, **kwargs):
         """Global config file for normalization experiments."""
-        self.project_directory = '/media/data_cifs/projects/prj_connectomics/wong'
+        self.project_directory = '/cifs/data/tserre_lrs/projects/prj_connectomics/wong'
         self.coord_path = os.path.join('db', 'coordinates.npy')
 
         # Segmentation properties
         self.seg_path_str = os.path.join(self.project_directory, 'mag1_segs/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}')  # nopep8
         self.mem_path_str = os.path.join(self.project_directory, 'mag1_membranes/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}')  # nopep8
-        self.ffn_ckpt = os.path.join(self.project_directory, 'ffn_ckpts/64_fov/ts_1/model.ckpt-1632105')  # nopep8
-        self.membrane_ckpt = os.path.join(self.project_directory, 'checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/model_137000.ckpt-137000')  # nopep8
+        self.ffn_ckpt = "/cifs/data/tserre/CLPS_Serre_Lab/connectomics/ffn_ckpts/64_fov/ts_1/model.ckpt-1632105"
+        self.membrane_ckpt = "/cifs/data/tserre/CLPS_Serre_Lab/connectomics/checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/model_137000.ckpt-137000"
         self.ffn_formatted_output = os.path.join(self.project_directory, 'segmentations/x{}/y{}/z{}/v{}/')
         self.ffn_model = 'feedback_hgru_v5_3l_notemp_f_v5_ts_1'
         self.shape = np.array([128, 128, 128])  # Shape of an EM image volume
 
         # DB
-        self.db_ssh_forward = False
+        self.db_ssh_forward = True
 
     def __getitem__(self, name):
         """Get item from class."""

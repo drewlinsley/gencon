@@ -113,29 +113,10 @@ class db(object):
             """
             UPDATE
             coordinates SET
-            is_processing_segmentation=False,
-            is_processing_membrane=False,
-            processed_segmentation=False,
-            processed_membrane=False,
-            run_number=NULL,
-            chain_id=NULL
-            """
-        )
-        if self.status_message:
-            self.return_status('RESET')
-
-    def reset_config(self):
-        """Remove all entries from the config."""
-        self.cur.execute(
-            """
-            DELETE from config
-            """
-        )
-        self.cur.execute(
-            """
-            INSERT INTO config
-            (global_max_id, number_of_segments, max_chain_id)
-            VALUES (1, 0, 0)
+            is_processing=False,
+            processed=False,
+            start_date=NULL,
+            end_date=NULL
             """
         )
         if self.status_message:
@@ -154,12 +135,8 @@ class db(object):
                 x,
                 y,
                 z,
-                is_processing_membrane,
-                processed_membrane,
-                is_processing_segmentation,
-                processed_segmentation,
-                run_number,
-                chain_id
+                is_processing,
+                processed,
             )
             VALUES %s
             """,
@@ -181,125 +158,16 @@ class db(object):
                 x,
                 y,
                 z,
-                is_processing_membrane,
-                processed_membrane,
-                is_processing_segmentation,
-                processed_segmentation,
-                run_number,
-                chain_id
+                is_processing,
+                processed
             )
             VALUES
             (
                 %(x)s,
                 %(y)s,
                 %(z)s,
-                %(is_processing_membrane)s,
-                %(processed_membrane)s,
-                %(is_processing_segmentation)s,
-                %(processed_segmentation)s,
-                %(run_number)s,
-                %(chain_id)s
-            )
-            """,
-            namedict)
-        if self.status_message:
-            self.return_status('INSERT')
-
-    def insert_segments(self, namedict):
-        """Insert segment info into segment table."""
-        self.cur.executemany(
-            """
-            INSERT INTO segments
-            (
-                x,
-                y,
-                z,
-                segment_id,
-            )
-            VALUES
-            (
-                %(x)s,
-                %(y)s,
-                %(z)s,
-                %(segment_id)s,
-            )
-            """,
-            namedict)
-        if self.status_message:
-            self.return_status('INSERT')
-
-    def create_config(self, namedict, experiment_link=False):
-        """
-        Add a combination of parameter_dict to the db.
-        ::
-        experiment_name: name of experiment to add
-        experiment_link: linking a child (e.g. clickme) -> parent (ILSVRC12)
-        """
-        self.cur.executemany(
-            """
-            INSERT INTO config
-            (
-                global_max_id,
-                number_of_segments,
-                max_chain_id,
-                total_coordinates,
-            )
-            VALUES
-            (
-                %(global_max_id)s,
-                %(number_of_segments)s,
-                %(max_chain_id)s,
-                %(total_coordinates)s,
-            )
-            """,
-            namedict)
-        if self.status_message:
-            self.return_status('INSERT')
-
-    def get_config(self, experiment_link=False):
-        """
-        Return config.
-        """
-        self.cur.execute(
-            """
-            SELECT * FROM config
-            """)
-        if self.status_message:
-            self.return_status('SELECT')
-        return self.cur.fetchone()
-
-    def add_segments(self, namedict, experiment_link=False):
-        """
-        Add a combination of parameter_dict to the db.
-        ::
-        experiment_name: name of experiment to add
-        experiment_link: linking a child (e.g. clickme) -> parent (ILSVRC12)
-        """
-        self.cur.executemany(
-            """
-            INSERT INTO segments
-            (
-                segment_id,
-                size,
-                start_x,
-                start_y,
-                start_z,
-                x,
-                y,
-                z,
-                chain_id,
-            )
-            VALUES
-            (
-                %(segment_id)s,
-                %(size)s,
-                %(start_x)s,
-                %(start_y)s,
-                %(start_z)s,
-                %(x)s,
-                %(y)s,
-                %(z)s,
-                %(chain_id)s,
+                %(is_processing)s,
+                %(processed)s
             )
             """,
             namedict)
@@ -311,17 +179,17 @@ class db(object):
         self.cur.execute(
             """
             UPDATE coordinates
-            SET is_processing_segmentation=TRUE, start_date='now()'
+            SET is_processing=TRUE, start_date='now()'
             WHERE x=%s AND y=%s AND z=%s""" % (x, y, z))
         if self.status_message:
             self.return_status('UPDATE')
 
-    def finish_coordinate_segmentation(self, x, y, z):
+    def finish_coordinate(self, x, y, z):
         """Set membrane processed=True."""
         self.cur.execute(
             """
             UPDATE coordinates
-            SET processed_segmentation=TRUE and is_processing_segmentation=True
+            SET processed=TRUE and is_processing=True
             WHERE x=%s AND y=%s AND z=%s""" % (x, y, z))
         if self.status_message:
             self.return_status('UPDATE')
@@ -347,30 +215,12 @@ class db(object):
         self.cur.execute(
             """
             UPDATE coordinates
-            SET is_processing_segmentation=TRUE, is_processing_membrane=TRUE, start_date='now()'
+            SET is_processing=TRUE, start_date='now()'
             WHERE _id=(
                 SELECT _id
                 FROM coordinates
-                WHERE (processed_segmentation=FALSE AND is_processing_segmentation=FALSE)
-                OR (processed_segmentation=FALSE AND DATE_PART('day', start_date - 'now()') > 0)
-                LIMIT 1)
-            RETURNING *
-            """)
-        if self.status_message:
-            self.return_status('SELECT')
-        return self.cur.fetchone()
-
-    def get_coordinate_segmentation(self, experiment=None, random=False):
-        """After returning coordinate, set processing=True."""
-        self.cur.execute(
-            """
-            UPDATE coordinates
-            SET is_processing_segmentation=TRUE, start_date='now()'
-            WHERE _id=(
-                SELECT _id
-                FROM coordinates
-                WHERE (processed_membrane=TRUE AND is_processing_segmentation=FALSE AND processed_segmentation=False)
-                OR (processed_segmentation=FALSE AND DATE_PART('day', start_date - 'now()') > 0)
+                WHERE (processed=FALSE AND is_processing=FALSE)
+                OR (processed=FALSE AND DATE_PART('day', start_date - 'now()') > 0)
                 LIMIT 1)
             RETURNING *
             """)
@@ -395,7 +245,7 @@ class db(object):
             """
             SELECT count(*)
             FROM coordinates
-            WHERE processed_segmentation=True
+            WHERE processed=True
             """)
         if self.status_message:
             self.return_status('SELECT')
@@ -418,7 +268,7 @@ class db(object):
             """
             SELECT *
             FROM coordinates
-            WHERE processed_segmentation=True
+            WHERE processed=True
             """)
         if self.status_message:
             self.return_status('SELECT')
@@ -429,7 +279,7 @@ class db(object):
         self.cur.executemany(
             """
             UPDATE coordinates
-            SET processed_membrane=False, is_processing_membrane=False
+            SET processed=False
             WHERE _id=%(_id)s""", rows)
         if self.status_message:
             self.return_status('UPDATE')
@@ -459,14 +309,6 @@ def reset_database():
         db_conn.return_status('RESET')
 
 
-def reset_config():
-    """Reset global config."""
-    config = credentials.postgresql_connection()
-    with db(config) as db_conn:
-        db_conn.reset_config()
-        db_conn.return_status('RESET')
-
-
 def populate_db(coords, slow=True):
     """Add coordinates to DB."""
     config = credentials.postgresql_connection()
@@ -476,25 +318,14 @@ def populate_db(coords, slow=True):
                 coords,
                 total=len(coords),
                 desc='Processing coordinates'):
-            split_coords = coord.split(os.path.sep)
-            x = [x.strip('x').lstrip('0') for x in split_coords if 'x' in x][0]
-            y = [y.strip('y').lstrip('0') for y in split_coords if 'y' in y][0]
-            z = [z.strip('z').lstrip('0') for z in split_coords if 'z' in z][0]
-            if not len(x):
-                x = '0'
-            if not len(y):
-                y = '0'
-            if not len(z):
-                z = '0'
+            x, y, z = coord
             if slow:
                 coord_dict += [{
                     'x': int(x),
                     'y': int(y),
                     'z': int(z),
-                    'is_processing_membrane': False,
-                    'processed_membrane': False,
-                    'is_processing_segmentation': False,
-                    'processed_segmentation': False,
+                    'is_processing': False,
+                    'processed': False,
                     'run_number': None,
                     'chain_id': None}]
             else:
@@ -526,11 +357,11 @@ def get_coordinate():
     return coordinate
 
 
-def finish_coordinate_segmentation(x, y, z):
+def finish_coordinate(x, y, z):
     """Finish off the segmentation coordinate from coordinate table."""
     config = credentials.postgresql_connection()
     with db(config) as db_conn:
-        db_conn.finish_coordinate_segmentation(x=x, y=y, z=z)
+        db_conn.finish_coordinate(x=x, y=y, z=z)
         db_conn.return_status('UPDATE')
 
 

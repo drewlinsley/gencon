@@ -173,30 +173,8 @@ class PolicyMembrane(BaseSeedPolicy):
     # Distance transform
     logging.info('peaks: filtering done')
     dt = ndimage.distance_transform_edt(edges).astype(np.float32)
+    del edges
     logging.info('peaks: edt done')
-
-    # Only keep seeds where there isn't a segmentation already
-    # if hasattr(self.canvas, 'shifts'):
-    #     # mask = (self.canvas.segmentation == 0).astype(np.float32)
-    #     # dt *= mask
-    #     shifts = np.array(self.canvas.shifts)
-    #     nz = np.where(shifts != 0)[0]
-    #     if shifts[nz] > 0:
-    #         shifts[nz] - 8
-    #     else:
-    #         shifts[nz] + 8
-    #     if shifts[0] > 0:
-    #         dt[:-shifts[0]] = 0
-    #     elif shifts[0] < 0:
-    #         dt[:shifts[0]] = 0
-    #     if shifts[1] > 0:
-    #         dt[:, :-shifts[1]] = 0
-    #     elif shifts[1] < 0:
-    #         dt[:, :shifts[1]] = 0
-    #     if shifts[2] > 0:
-    #         dt[..., :-shifts[2]] = 0
-    #     elif shifts[2] < 0:
-    #         dt[..., :shifts[2]] = 0
 
     # Use a specifc seed for the noise so that results are reproducible
     # regardless of what happens before the policy is called.
@@ -232,19 +210,6 @@ class PolicyMembrane(BaseSeedPolicy):
         print(
           'Trimmed %s/%s seeds. (%s to process now).' % (
           pre_idxs - len(idxs), pre_idxs, len(idxs)))
-        # h, w, d = self.canvas.segmentation.shape
-        # if shifts[0] > 0:
-        #     idxs = idxs[idxs[:, 0] >= h - shifts[0]]
-        # elif shifts[0] < 0:
-        #     idxs = idxs[idxs[:, 0] < shifts[0]]
-        # if shifts[1] > 0:
-        #     idxs = idxs[idxs[:, 1] >= w - shifts[1]]
-        # elif shifts[1] < 0:
-        #     idxs = idxs[idxs[:, 1] < shifts[1]]
-        # if shifts[2] > 0:
-        #     idxs = idxs[idxs[:, 2] >= d - shifts[2]]
-        # elif shifts[2] < 0:
-        #     idxs = idxs[idxs[:, 2] < shifts[2]]
 
     if self.previous_seg is not None:
       # Cycle through each of the segments > 0 in self.previous_seg. Choose the point with > dt.
@@ -260,6 +225,7 @@ class PolicyMembrane(BaseSeedPolicy):
           margins[1]:-margins[1],
           margins[2]:-margins[2]] = 1.
       dt *= dt_mask
+      del dt_mask
       for uidx in unique_prev:
         mask = self.previous_seg == uidx
         potential_idxs = dt * mask

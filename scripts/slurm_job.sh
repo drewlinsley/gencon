@@ -1,22 +1,17 @@
 #!/bin/bash
 
-#SBATCH --time=20:00:00
-#SBATCH -p gpu --gres=gpu:1
+#SBATCH -p gpu-he --gres=gpu:1
 #SBATCH -n 4
-#SBATCH -N 1
-#SBATCH --mem=94G
-#SBATCH --account=carney-tserre-condo
-#SBATCH -C quadrortx
-#SBATCH -J connectomics_reconstruction
-
-# Specify an output file
-# #SBATCH -o $0
-# #SBATCH -e $1
+#SBATCH --mem=110G
+#SBATCH -t 8:00:00
+#SBATCH -o %j.output
+#SBATCH -e %j.error
 
 # # Set up the environment by loading modules
-# module load anaconda/3-5.2.0
-. /gpfs/runtime/opt/anaconda/3-5.2.0/etc/profile.d/conda.sh
-conda activate /users/dlinsley/anaconda/connectomics
-python run_job.py --merge_segment_only  # --data_path=/cifs/data/tserre/CLPS_Serre_Lab/connectomics
-echo FINISHED
+module load anaconda
+module load cudnn
+module load cuda/11.1.1 gcc/10.2
+source activate wk
+cd ~/gen_connectomics
+bash scripts/run_rachel.sh
 

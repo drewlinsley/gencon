@@ -27,3 +27,6 @@ These steps can be automated by running `bash process_rachel_data.sh`
 - psql <db_user> -h 127.0.0.1 -d <db_name>
 - psql wong -h 127.0.0.1 -d wong
 
+# TODO:
+- Change config class to yml files for flexibility.
+

@@ -1348,21 +1348,21 @@ class Runner(object):
         self.shifts = None
     canvas.segmentation = storage.clean_and_merge(canvas.segmentation, old_seg=self.init_seg_volume_untrimmed, shifts=self.shifts)
 
-    # Save segmentation results. Reduce # of bits per item if possible.
-    storage.save_subvolume(
-        unalign_image(canvas.segmentation),
-        unalign_origins(canvas.origins, np.array(canvas.corner_zyx)),
-        target_path,
-        request=self.request.SerializeToString(),
-        counters=canvas.counters.dumps(),
-        overlaps=canvas.overlaps)
+    # # Save segmentation results. Reduce # of bits per item if possible.
+    # storage.save_subvolume(
+    #     unalign_image(canvas.segmentation),
+    #     unalign_origins(canvas.origins, np.array(canvas.corner_zyx)),
+    #     target_path,
+    #     request=self.request.SerializeToString(),
+    #     counters=canvas.counters.dumps(),
+    #     overlaps=canvas.overlaps)
 
     # Save probability map separately. This has to happen after the
     # segmentation is saved, as `save_subvolume` will create any necessary
     # directories.
     prob = unalign_image(canvas.seg_prob)
-    with storage.atomic_file(prob_path) as fd:
-      np.savez_compressed(fd, qprob=prob)
+    # with storage.atomic_file(prob_path) as fd:
+    #   np.savez_compressed(fd, qprob=prob)
     return canvas.segmentation, prob
 
   def run(self, corner, subvol_size, reset_counters=True):

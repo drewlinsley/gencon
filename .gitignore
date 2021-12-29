@@ -17,5 +17,7 @@ berson_synapse_segs/
 *.nml
 build/
 webknossos-wrap
-
+0/
+*.error
+*.output
 
