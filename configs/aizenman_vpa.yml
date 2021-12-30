@@ -15,8 +15,8 @@ ds:
     path: "${stem}/connectomics/cubed_mag1/pbtest/aizenman_control"
     img_layer: "color"
     scale: [5, 5, 40]
-    img_shape: [240, 4740, 4740]
-    resize_mod: [1., 4.114, 4.114]
+    vol_shape: [240, 2000, 2000]
+    resize_mod: [1., 2.5, 2.5]
     force_coord: [0, 0, 0]
-    membrane_slice: [240, 384, 384]
+    membrane_slice: [120, 400, 400]
 

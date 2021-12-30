@@ -12,7 +12,6 @@ from membrane.layers.recurrent import feedback_hgru_constrained_3l as feedback_h
 from membrane.membrane_ops import tf_fun
 
 
-
 def experiment_params(
         train_name=None,
         test_name=None,
@@ -369,7 +368,7 @@ def build_model(data_tensor, reuse, training, output_channels, merge="none", sco
             bottom=nh2,
             name='hgru_bn',
             fused=True,
-            renorm=True,
+            renorm=False,  # True,
             training=training)
         ul0 = conv.up_block_v2(
             layer_name='ul0',
@@ -381,17 +380,6 @@ def build_model(data_tensor, reuse, training, output_channels, merge="none", sco
             norm_type=None,  # norm_type,
             reuse=reuse)
         with tf.variable_scope('out_embedding', reuse=reuse):
-            """
-            out_emb = conv.conv3d_layer(
-                bottom=ul0,
-                name='out_emb',
-                stride=[1, 1, 1],
-                padding='SAME',
-                num_filters=output_channels,
-                kernel_size=[1, 1, 1],
-                trainable=training,
-                use_bias=True)
-           """
             out_emb = tf.layers.conv3d(
                 inputs=ul0,
                 filters=output_channels,

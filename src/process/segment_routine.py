@@ -1,3 +1,4 @@
+import sys
 import os
 import webknossos as wk
 from src.process import neurite_segmentation
@@ -18,7 +19,7 @@ def main(conf, resize_order=3):
     resize_mod = conf.ds.resize_mod
     force_coord = conf.ds.force_coord
     membrane_ckpt = conf.membrane_ckpt
-    membrane_slice = conf.ds.membrane_slice
+    membrane_slice = [x for x in conf.ds.membrane_slice]
     ffn_ckpt = conf.ffn_ckpt
     ffn_model = conf.ffn_model
 
@@ -31,8 +32,8 @@ def main(conf, resize_order=3):
             # No need to process this point
             raise RuntimeException('No more coordinates found!')
         x, y, z = next_coordinate['x'], next_coordinate['y'], next_coordinate['z']  # noqa
-    mem_path = config.mem_path_str.format(x, y, z, x, y, z)
-    seg_path = config.seg_path_str.format(x, y, z, x, y, z)
+    mem_path = conf.mem_path_str.format(x, y, z, x, y, z)
+    seg_path = conf.seg_path_str.format(x, y, z, x, y, z)
     os.makedirs(os.path.sep.join(mem_path.split(os.path.sep)[:-1]), exist_ok=True)
     os.makedirs(os.path.sep.join(seg_path.split(os.path.sep)[:-1]), exist_ok=True)
 
@@ -70,6 +71,7 @@ def main(conf, resize_order=3):
     segs = neurite_segmentation.get_segmentation(
         vol=vol_mem,
         ffn_ckpt=ffn_ckpt,
+        move_threshold=0.7,
         ffn_model=ffn_model)  # Takes uint8 inputs
 
     # Resize and transpose segments
@@ -78,8 +80,9 @@ def main(conf, resize_order=3):
     # from matplotlib import pyplot as plt;plt.subplot(131);plt.imshow(cube_in[..., 32]);plt.subplot(132);plt.imshow(vol_mem[32]);plt.subplot(133);plt.imshow(segs[..., 32]);plt.show()
     np.save(seg_path, segs)
 
-    # Finish coordinate in DB
-    db.finish_coordinate(x, y, z)
+    if force_coord is None:
+        # Finish coordinate in DB
+        db.finish_coordinate(x, y, z)
     print("Finished volume at {} {} {}".format(x, y, z))
 
 

@@ -3,20 +3,19 @@ import numpy as np
 import webknossos as wk
 from webknossos.dataset import COLOR_CATEGORY, SEGMENTATION_CATEGORY
 from webknossos.dataset.properties import LayerViewConfiguration
-from config import Config
 from skimage.segmentation import relabel_sequential as rs
 from skimage.transform import resize
 
 
 # Create the dataset
-config = Config()
 x, y, z = 0, 0, 0
 scale = (5, 5, 50)
 seg_dtype = np.uint32
 mem_dtype = np.uint8
 ds_input = "/media/data_cifs/connectomics/cubed_mag1/pbtest/wong_1"
+token = "UTUOQJvbbyRFbD_NSnTMig"
 image_shape = [240, 4740, 4740]
-with wk.webknossos_context(url="https://webknossos.org", token=config.token):
+with wk.webknossos_context(url="https://webknossos.org", token=token):
     img_mem = np.load("/media/data_cifs/projects/prj_connectomics/wong/mag1_membranes/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}.npy".format(x, y, z, x, y, z))
     # img = img_mem[..., 0]
     mem = img_mem[..., 1].astype(mem_dtype).transpose(1, 2, 0)
@@ -57,11 +56,11 @@ with wk.webknossos_context(url="https://webknossos.org", token=config.token):
     # mem_config = LayerViewConfiguration(color=[255, 0, 0])
     layer_membranes = ds.add_layer(
         "membranes",
-        SEGMENTATION_CATEGORY,
+        COLOR_CATEGORY,  # SEGMENTATION_CATEGORY,
         mem_dtype,
         num_channels=1,
         # default_view_configuration=mem_config,
-        largest_segment_id=np.iinfo(np.uint8).max
+        largest_segment_id=1,  # np.iinfo(np.uint8).max
     )
     layer_membranes.add_mag(1, compress=True).write(mem)
     layer_membranes.downsample()

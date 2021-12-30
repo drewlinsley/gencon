@@ -5,12 +5,9 @@ import argparse
 import psycopg2
 import psycopg2.extras
 import psycopg2.extensions
-from . import credentials
 import numpy as np
 from tqdm import tqdm
-from config import Config
 sshtunnel.DAEMON = True  # Prevent hanging process due to forward thread
-main_config = Config()
 
 
 
