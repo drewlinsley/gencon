@@ -2,7 +2,7 @@ import sys
 import os
 import webknossos as wk
 from src.process import ribbon_detection
-from src.process import muller_detection
+# from src.process import muller_detection
 from skimage.transform import resize
 import numpy as np
 from db import db
@@ -18,8 +18,8 @@ def main(conf, resize_order=3):
     image_shape = conf.ds.vol_shape
     resize_mod = conf.ds.resize_mod
     force_coord = conf.ds.force_coord
-    ribbon_ckpt = conf.ribbon_ckpt
-    muller_ckpt = conf.muller_ckpt
+    ribbon_ckpt = conf.inference.ribbon_ckpt
+    muller_ckpt = conf.inference.muller_ckpt
 
     # Get coordinates from DB
     if force_coord is not None:
@@ -30,26 +30,26 @@ def main(conf, resize_order=3):
             # No need to process this point
             raise RuntimeException('No more coordinates found!')
         x, y, z = next_coordinate['x'], next_coordinate['y'], next_coordinate['z']  # noqa
-    ribbon_path = conf.ribbon_path_str.format(x, y, z, x, y, z)
-    muller_path = conf.muller_path_str.format(x, y, z, x, y, z)
-    mem_path = conf.mem_path_str.format(x, y, z, x, y, z)
+    ribbon_path = conf.storage.ribbon_path_str.format(x, y, z, x, y, z)
+    muller_path = conf.storage.muller_path_str.format(x, y, z, x, y, z)
+    mem_path = conf.storage.mem_path_str.format(x, y, z, x, y, z)
     os.makedirs(os.path.sep.join(ribbon_path.split(os.path.sep)[:-1]), exist_ok=True)
     os.makedirs(os.path.sep.join(muller_path.split(os.path.sep)[:-1]), exist_ok=True)
 
     # Get images and membranes
-    img = np.load(mem_path)
+    img = np.load("{}.npy".format(mem_path))
 
     print("Detecting mullers")
-    muller = muller_detection.get_segmentation(
+    muller = ribbon_detection.get_segmentation(
         vol=img,
-        ckpt_path=muller_ckpt
+        ckpt_path=muller_ckpt,
         normalize=True)
     np.save(muller_path, muller)
 
     print("Detecting ribbons")
     ribbon = ribbon_detection.get_segmentation(
         vol=img,
-        ckpt_path=ribbon_ckpt
+        ckpt_path=ribbon_ckpt,
         normalize=True)
     np.save(ribbon_path, ribbon)
 

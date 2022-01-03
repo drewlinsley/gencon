@@ -7,7 +7,6 @@ import wkw
 from tqdm import tqdm
 
 
-
 def cube_data(data, dataset, h_inds, w_inds, d_inds, parallel, cube_size):
     """Figure out w/d inds then process in parallel."""
     inds = []
@@ -31,34 +30,47 @@ def convert_save_cubes(data, dataset, ind, cube_size):
         print("Failed {}, {}, {}".format(h, w, d))
 
 
-ims = glob(os.path.join(config.wong_raw_image_path))
-zid = [int(x.split("_")[0].split(os.path.sep)[1]) for x in ims]
-zarg = np.argsort(zid)
-sort_ims = np.asarray(ims)[zarg]
-cube_size = [128, 128, 128]
+def main(conf, dtype=np.uint8, n_jobs=-1, backend="threading"):
+    """Pass an omegaconf with project information.
 
-vol_z = sort_ims
-cube = []
-for f in vol_z:
-  cube.append(io.imread(f))
-cube = np.asarray(cube).astype(np.uint8)
-print("Pretranspose shape: {}".format(cube.shape))
-cube = cube.transpose(2, 1, 0)
-print("Posttranspose shape: {}".format(cube.shape))
+    See configs/W-Q.yml for an example."""
+    conf = OmegaConf.load(conf)
+    cube_size = conf.ds.cube_size
+    image_path = conf.storage.raw_img_path  
+    ims = glob(os.path.join(image_path))
+    zid = [int(x.split("_")[0].split(os.path.sep)[1]) for x in ims]
+    zarg = np.argsort(zid)
+    sort_ims = np.asarray(ims)[zarg]
 
-cube_shape = cube.shape
-h_inds = np.arange(0, cube_shape[0], cube_size[0], dtype=int)
-w_inds = np.arange(0, cube_shape[1], cube_size[1], dtype=int)
-d_inds = np.arange(0, cube_shape[2], cube_size[2], dtype=int)
+    cube = []
+    for f in sort_ims:
+        cube.append(io.imread(f))
+    cube = np.asarray(cube).astype(np.uint8)
+    print("Pretranspose shape: {}".format(cube.shape))
+    cube = cube.transpose(2, 1, 0)
+    print("Posttranspose shape: {}".format(cube.shape))
 
-# Write the dataset to wkw
-dtype = np.uint8
-dataset = wkw.Dataset.open(
-    config.wong_wkw_image_path,  
-    wkw.Header(dtype))
-with Parallel(n_jobs=-1, backend='threading') as parallel:
-    cube_data(cube, dataset=dataset, cube_size=cube_size, parallel=parallel, h_inds=h_inds, w_inds=w_inds, d_inds=d_inds)
+    cube_shape = cube.shape
+    h_inds = np.arange(0, cube_shape[0], cube_size[0], dtype=int)
+    w_inds = np.arange(0, cube_shape[1], cube_size[1], dtype=int)
+    d_inds = np.arange(0, cube_shape[2], cube_size[2], dtype=int)
 
-# Now split the dataset up into coordinates, adjusted for segmentation size. These
-# are the coords we will read with our reconstruction workers. 
+    # Write the dataset to wkw
+    dataset = wkw.Dataset.open(
+        config.wong_wkw_image_path,  
+        wkw.Header(dtype))
+    with Parallel(n_jobs=n_jobs, backend=backend) as parallel:
+        cube_data(
+            cube=cube,
+            dataset=dataset,
+            cube_size=cube_size,
+            parallel=parallel,
+            h_inds=h_inds,
+            w_inds=w_inds,
+            d_inds=d_inds)
+
+
+if __name__ == '__main__':
+    conf = sys.argv[1]
+    main(conf)
 
