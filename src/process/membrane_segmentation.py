@@ -154,6 +154,29 @@ def get_segmentation(
                     [vs.shape for vs in vols])))
             os._exit(1)
         del vols  # Garbage collect
+        # membranes = []
+        # for idx, it_vol in tqdm(enumerate(vol_stack), total=len(vol_stack), desc="Processing membranes"):
+        #     if idx == 0:
+        #         preds, sess, test_dict = fgru.main(
+        #             test=it_vol[None, ..., None],
+        #             evaluate=True,
+        #             adabn=True,
+        #             gpu_device='/gpu:0',
+        #             return_sess=True,
+        #             test_input_shape=np.concatenate((
+        #                 membrane_slice, [1])).tolist(),
+        #             test_label_shape=np.concatenate((
+        #                 membrane_slice, [3])).tolist(),
+        #             checkpoint=membrane_ckpt)
+        #     else:
+        #         feed_dict = {
+        #             test_dict['test_images']: it_vol[None, ..., None],
+        #         }
+        #         it_test_dict = sess.run(
+        #             test_dict,
+        #             feed_dict=feed_dict)
+        #         preds = it_test_dict['test_logits'].squeeze()
+        #     membranes.append(preds) 
         membranes = fgru.main(
             test=vol_stack,
             evaluate=True,

@@ -225,29 +225,7 @@ def get_remapping(main_margin, merge_margin, parallel, use_numba=False, merge_wi
             remaps = np.concatenate(remaps, 0)
     except:
         import pdb;pdb.set_trace()
-    # transfers = np.concatenate(transfers, 0)
     updates = np.max(updates)
-
-    """
-    for um, tc in zip(unique_main, unique_main_counts):  # Package this as a function
-        masked_plane = main_margin == um  # fastremap.mask_except(h_plane, um)
-        overlap = merge_margin[masked_plane]
-        overlap = overlap[overlap != 0]
-        overlap_check = len(overlap)  # overlap.sum()
-        if not overlap_check:
-            # In this case, there's a segment in main that overlaps with empty space in merge. Let's propagate main.
-            transfers.append(um)
-            update = True
-        else:
-            # In this case, there's overlap between the merge and the main. Let's pass the main label to all merges that are touched (This used to be an argmax).
-            uni_over, counts = fastremap.unique(overlap, return_counts=True)
-            # uni_over = uni_over[uni_over > 0]
-            for ui, uc in zip(uni_over, counts):
-                remap.append([ui, um, uc])  # Append merge ids for the overlap
-    """
-    if 0:  # len(transfers):
-        # Transfer all over in a single C++ optimized call
-        merge_margin += fastremap.mask_except(main_margin, transfers)
     return remaps, merge_margin, transfers, updates
 
 
@@ -505,7 +483,6 @@ def process_merge(
             adj_coor[0]: adj_coor[0] + vs[0],
             adj_coor[1]: adj_coor[1] + vs[1]]
         prev_top_face = prev_vol[..., fos + adj_dz] #  -adj_dz]
-        # import pdb;pdb.set_trace()
         # from matplotlib import pyplot as plt;plt.subplot(121);plt.imshow(rfo(curr_bottom_face)[0]);plt.subplot(122);plt.imshow(rfo(prev_top_face)[0]);plt.show()
         if not prev_top_face.sum():
             # Prev doesn't have any voxels, pass the original
@@ -604,7 +581,7 @@ def main(
         magic_merge_number_max=7,  # 10
         magic_merge_number_min=5,  # 6
         dtype=np.uint32,  # Data type of merged segmentations
-        n_jobs=12,
+        n_jobs=25,
         h_margin=100,
         bu_margin=25,
         min_vol_size=256):
@@ -670,21 +647,16 @@ def main(
 
             # Allow for fast loading for debugging
             skip_processing = False
-            skipmax = False
             if load_processed:
                 check_curr = os.path.exists(os.path.join(out_dir, 'plane_z{}.npy'.format(z)))
-                check_next = os.path.exists(os.path.join(out_dir, 'plane_z{}.npy'.format(z + 1)))
+                check_next = os.path.exists(os.path.join(out_dir, 'plane_z{}.npy'.format(unique_z[zidx + 1])))
                 if check_curr and check_next:
                     print("This slice and next already processed. Skipping...")
-                    prev = main
-                    skip_processing = True
-                    skipmax = True
+                    continue
                 elif check_curr and not check_next:
-                    print("Slice already processed. Loading...")
-                    prev = np.load(os.path.join(out_dir, 'plane_z{}.npy'.format(z)))
-                    skip_processing = True
-                else:
-                    print("Processing this slice.")
+                    print("This slice is already proccessed. Loading to get max voxel id before processing next.")
+                    max_vox = np.load(os.path.join(out_dir, 'plane_z{}.npy'.format(z))).max()
+                    continue
 
             if not skip_processing:
                 # Get main/merge splits
@@ -761,10 +733,11 @@ def main(
             print("Finished h-merge")
 
             # Perform bottom-up merge
-            if prev is not None:
+            if zidx > 0:
                 margin = config.shape[-1] * (unique_z[zidx] - unique_z[zidx - 1])
                 if margin < z_max:
                     all_remaps = {}
+                    prev = np.load("merge_coordinates/{}".format(unique_z[zidx - 1]))
                     for sel_coor in tqdm(z_sel_coors_main, desc='BU Merging: {}'.format(z)):
                         main, remaps = process_merge(
                             vol=[1],  # Just pass a dummy for BU
@@ -791,20 +764,12 @@ def main(
 
             # Save the current main and retain info for the next slice
             np.save(os.path.join(out_dir, 'plane_z{}'.format(z)), main)
-
-            if prev is not None:
-                del prev
-            # prev = np.copy(main)
-            prev = main
             z_sel_coors_merge = np.concatenate(z_sel_coors_merge, 0)
         else:
             # Slice is already processed, skip this one.
             if not len(z_sel_coors_main):
                 z_sel_coors_main = np.copy(z_sel_coors_merge)
-            if skipmax:
-                mv = 1
-            else:
-                mv = prev.max() + 1
+            import pdb;pdb.set_trace()  # Figure out how to get the right max val here
             max_vox += mv
             print('Skipping plane {}. Current max: {}'.format(z, max_vox))
         unique_mains = np.unique(np.concatenate((z_sel_coors_main[:, :-1], z_sel_coors_merge[:, :-1]), 0), axis=0)  # ADDED TO ENSURE BU-prop AT ALL LOCATIONS

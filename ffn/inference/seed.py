@@ -182,7 +182,7 @@ class PolicyMembrane(BaseSeedPolicy):
     np.random.seed(42)
     idxs = skimage.feature.peak_local_max(
         dt + np.random.random(dt.shape) * 1e-4,
-        indices=True, min_distance=3, threshold_abs=0, threshold_rel=0)
+        min_distance=3, threshold_abs=0, threshold_rel=0)  # indices=True is depreciated
     np.random.set_state(state)
 
     # Sort by dt value

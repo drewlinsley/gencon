@@ -4,7 +4,8 @@ name: "wong"
 token: "???"
 db_name: "wong"
 db_ssh_forward: True
-stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
+# stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
+stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
 project_directory: "${stem}/projects/prj_connectomics/wong"
 file_save_str: "x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
 storage:

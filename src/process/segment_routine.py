@@ -49,7 +49,10 @@ def main(conf, resize_order=3):
     res_shape = res_shape.astype(float) / np.asarray(resize_mod).astype(float)
     res_shape = res_shape.astype(int)
     print("Resizing images")
-    res_cube_in = resize(cube_in, res_shape[::-1][:-1], anti_aliasing=True, preserve_range=True, order=resize_order)
+    if not np.all(res_shape[::-1][:-1] == np.asarray(cube_in.shape[:-1])):
+        res_cube_in = resize(cube_in, res_shape[::-1][:-1], anti_aliasing=True, preserve_range=True, order=resize_order)
+    else:
+        res_cube_in = cube_in
     # from matplotlib import pyplot as plt;plt.subplot(121);plt.imshow(res_cube_in[32]);plt.subplot(122);plt.imshow(cube_in[32]);plt.show()
     del cube_in, mag1, layer, ds# clean up
     res_cube_in = res_cube_in.transpose(2, 0, 1)

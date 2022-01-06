@@ -241,7 +241,6 @@ class ThreadingBatchExecutor(BatchExecutor):
 
         if self.reslicing is not None:
           ret['logits'] = ret['logits'][self.reslicing]
-        # from matplotlib import pyplot as plt
         # plt.subplot(131);plt.imshow(self.input_image.squeeze()[5, ..., 0]);plt.colorbar();plt.subplot(132);plt.imshow(self.input_image.squeeze()[5, ..., 1]); plt.colorbar();plt.subplot(133);plt.imshow(ret['logits'].squeeze()[5], vmin=-5, vmax=5);plt.colorbar();plt.show()
       except Exception as e:  # pylint:disable=broad-except
         logging.exception(e)

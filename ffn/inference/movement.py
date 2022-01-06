@@ -86,7 +86,8 @@ def get_scored_move_offsets(deltas, prob_map, threshold=0.9, debug=False):
       # of the subvolume orthogonal to the current axis.
       face_sel = subvol_sel[:]
       face_sel[axis] = axis_offset + center[axis]
-      face_prob = prob_map[face_sel]
+      face_prob = prob_map[tuple(face_sel)]
+      # face_prob = prob_map[face_sel]  # Depreciated
       shape = face_prob.shape
 
       # Find voxel with maximum activation.
