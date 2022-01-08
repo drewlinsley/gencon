@@ -397,7 +397,8 @@ def process_merge(
 
         # Drop T/B/L/R planes into main. See if there's anything there. Brute force.
         # adj_coor is TL corner of the merge we're looking at.
-        # We also wan these planes to be a bit offset from boundaries because of sparse segs there
+        # We also want these planes to be a bit offset from boundaries because of sparse segs there
+        import pdb;pdb.set_trace()
         top_plane_hs = [adj_coor[0] + margin, adj_coor[0] + margin + 1]
         top_plane_ws = [adj_coor[1] + margin, adj_coor[1] + vs[1] - margin]
         bottom_plane_hs = [adj_coor[0] + vs[0] - margin - 1, adj_coor[0] + vs[0] - margin]
@@ -582,7 +583,7 @@ def main(
         magic_merge_number_min=5,  # 6
         dtype=np.uint32,  # Data type of merged segmentations
         n_jobs=25,
-        h_margin=100,
+        h_margin=25,
         bu_margin=25,
         min_vol_size=256):
     """
@@ -649,7 +650,10 @@ def main(
             skip_processing = False
             if load_processed:
                 check_curr = os.path.exists(os.path.join(out_dir, 'plane_z{}.npy'.format(z)))
-                check_next = os.path.exists(os.path.join(out_dir, 'plane_z{}.npy'.format(unique_z[zidx + 1])))
+                if zidx < (len(unique_z) - 1):  # Can't check next on the last slice
+                    check_next = os.path.exists(os.path.join(out_dir, 'plane_z{}.npy'.format(unique_z[zidx + 1])))
+                else:
+                    check_next = False
                 if check_curr and check_next:
                     print("This slice and next already processed. Skipping...")
                     continue
@@ -734,8 +738,8 @@ def main(
 
             # Perform bottom-up merge
             if zidx > 0:
-                margin = config.shape[-1] * (unique_z[zidx] - unique_z[zidx - 1])
-                if margin < z_max:
+                margin = res_shape[-1] * (unique_z[zidx] - unique_z[zidx - 1])
+                if margin < res_shape[-1]:
                     all_remaps = {}
                     prev = np.load("merge_coordinates/{}".format(unique_z[zidx - 1]))
                     for sel_coor in tqdm(z_sel_coors_main, desc='BU Merging: {}'.format(z)):
@@ -747,7 +751,6 @@ def main(
                             margin_end=margin + bu_offset,
                             parallel=parallel,
                             mins=mins,
-                            config=config,
                             plane_coors=prev_coords,
                             vs=res_shape,
                             min_vol_size=min_vol_size,
@@ -769,8 +772,7 @@ def main(
             # Slice is already processed, skip this one.
             if not len(z_sel_coors_main):
                 z_sel_coors_main = np.copy(z_sel_coors_merge)
-            import pdb;pdb.set_trace()  # Figure out how to get the right max val here
-            max_vox += mv
+            # max_vox += mv
             print('Skipping plane {}. Current max: {}'.format(z, max_vox))
         unique_mains = np.unique(np.concatenate((z_sel_coors_main[:, :-1], z_sel_coors_merge[:, :-1]), 0), axis=0)  # ADDED TO ENSURE BU-prop AT ALL LOCATIONS
         z_sel_coors_main = np.concatenate((unique_mains, np.zeros((len(unique_mains), 1))), 1)  # ADDED TO ENSURE BU-prop AT ALL LOCATIONS

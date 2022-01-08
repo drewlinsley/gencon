@@ -1,12 +1,12 @@
 # Config for processing W-Q's volume
 
-name: "aizenman_vpa"
+name: "somatosensory"
 token: "UTUOQJvbbyRFbD_NSnTMig"
-db_name: "aizenman_vpa"
+db_name: "somatosensory"
 db_ssh_forward: True
 stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
 # stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
-project_directory: "${stem}/projects/prj_connectomics/aizenman_vpa"
+project_directory: "${stem}/projects/prj_connectomics/somatosensory"
 file_save_str: "x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
 storage:
     raw_img_path: ""
@@ -26,13 +26,13 @@ inference:
     ribbon_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/synapse_fgru_ckpts/synapse_fgru_v2_ckpts-85000"
     muller_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/celltype_ckpts/good"
 ds:
-    path: "${stem}/connectomics/cubed_mag1/pbtest/aizenman_vpa"
+    path: "${project_directory}"
     img_layer: "color"
-    scale: [5, 5, 40]
-    vol_shape: [200, 4740, 4740]
-    resize_mod: [1., 4.114, 4.114]
-    force_coord: [0, 0, 0]
-    membrane_slice: [200, 384, 384]
+    scale: [11.239999771118164, 11.239999771118164, 28]
+    vol_shape: [240, 1152, 1152]
+    resize_mod: [1.5, 1.5, 1.5]
+    force_coord: [2100, 2500, 1500]
+    membrane_slice: [240, 384, 384]
     cube_size: [128, 128, 128]  # For creating wkw cubes
-    segmentation_layer: False
+    segmentation_layer: "segmentation"
 

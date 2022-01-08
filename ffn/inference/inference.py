@@ -686,7 +686,7 @@ class Canvas(object):
         if not (self.is_valid_pos(pos, ignore_move_threshold=True)
                 and self.restrictor.is_valid_pos(pos)
                 and self.restrictor.is_valid_seed(pos)):
-          logging.info('Invalid position: {} {} {}'.format(pos[0], pos[1], pos[2]))
+          # logging.info('Invalid position: {} {} {}'.format(pos[0], pos[1], pos[2]))
           continue
 
         # Too close to an existing segment?
