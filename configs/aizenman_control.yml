@@ -4,8 +4,8 @@ name: "aizenman_control"
 token: "UTUOQJvbbyRFbD_NSnTMig"
 db_name: "aizenman_control"
 db_ssh_forward: True
-stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
-# stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
+# stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
+stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
 project_directory: "${stem}/projects/prj_connectomics/aizenman_control"
 file_save_str: "x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
 storage:
@@ -25,6 +25,8 @@ inference:
     ffn_model: "feedback_hgru_v5_3l_notemp_f_v5_ts_1"
     ribbon_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/synapse_fgru_ckpts/synapse_fgru_v2_ckpts-85000"
     muller_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/celltype_ckpts/good"
+    move_threshold: 0.8
+    segment_threshold: 0.6
 ds:
     path: "${stem}/connectomics/cubed_mag1/pbtest/aizenman_control"
     img_layer: "color"

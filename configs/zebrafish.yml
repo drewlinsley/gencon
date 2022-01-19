@@ -1,7 +1,7 @@
 # Config for processing W-Q's volume
 
 name: "zebrafish"
-token: "???"
+token: "UTUOQJvbbyRFbD_NSnTMig"
 db_name: "zebrafish"
 db_ssh_forward: True
 # stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
@@ -25,6 +25,8 @@ inference:
     ffn_model: "feedback_hgru_v5_3l_notemp_f_v5_ts_1"
     ribbon_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/synapse_fgru_ckpts/synapse_fgru_v2_ckpts-85000"
     muller_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/celltype_ckpts/good"
+    move_threshold: 0.8
+    segment_threshold: 0.5
 ds:
     path: "${project_directory}"
     img_layer: "color"

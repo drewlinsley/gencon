@@ -22,6 +22,8 @@ def main(conf, resize_order=3):
     membrane_slice = [x for x in conf.ds.membrane_slice]
     ffn_ckpt = conf.inference.ffn_ckpt
     ffn_model = conf.inference.ffn_model
+    move_threshold = conf.inference.move_threshold
+    segment_threshold = conf.inference.segment_threshold
 
     # Get coordinates from DB
     if force_coord is not None:
@@ -53,12 +55,13 @@ def main(conf, resize_order=3):
         res_cube_in = resize(cube_in, res_shape[::-1][:-1], anti_aliasing=True, preserve_range=True, order=resize_order)
     else:
         res_cube_in = cube_in
+    res_cube_in = res_cube_in.astype(np.float32)
     # from matplotlib import pyplot as plt;plt.subplot(121);plt.imshow(res_cube_in[32]);plt.subplot(122);plt.imshow(cube_in[32]);plt.show()
     del cube_in, mag1, layer, ds# clean up
     res_cube_in = res_cube_in.transpose(2, 0, 1)
 
     # Segment membranes
-    print("Segmenting membranes")
+    print("Segmenting membranes with input vol size: {} and data type: {}".format(res_cube_in.shape, res_cube_in.dtype))  # noqa
     vol_mem = membrane_segmentation.get_segmentation(
         vol=res_cube_in,
         membrane_ckpt=membrane_ckpt,
@@ -74,7 +77,8 @@ def main(conf, resize_order=3):
     segs = neurite_segmentation.get_segmentation(
         vol=vol_mem,
         ffn_ckpt=ffn_ckpt,
-        move_threshold=0.7,
+        move_threshold=move_threshold,
+        segment_threshold=segment_threshold,
         ffn_model=ffn_model)  # Takes uint8 inputs
 
     # Resize and transpose segments
