@@ -47,8 +47,10 @@ class BaseSeedPolicy(object):
     """
     previous_origins = kwargs.get('previous_origins', None)
     previous_seg = kwargs.get('previous_seg', None)
+    mem_seed_thresh = kwargs.get('mem_seed_thresh', None)
     self.previous_origins = previous_origins
     self.previous_seg = previous_seg
+    self.mem_seed_thresh = mem_seed_thresh
     del kwargs
     # TODO(mjanusz): Remove circular reference between Canvas and seed policies.
     self.canvas = weakref.proxy(canvas)
@@ -155,6 +157,98 @@ class PolicyPeaks(BaseSeedPolicy):
     self.coords = idxs
 
 
+class PolicyMembraneAndPeaks(BaseSeedPolicy):
+  """"""
+  def _init_coords(self):
+    logging.info('peaks: starting')
+
+    # Edge detection.
+    edges = (
+        self.canvas.image.astype(np.float32)[..., 1] > 0.5).astype(
+            np.float32)
+
+    # Distance transform
+    logging.info('peaks: filtering done')
+    dt = ndimage.distance_transform_edt(edges).astype(np.float32)
+    del edges
+    logging.info('peaks: edt done')
+
+    # Use a specifc seed for the noise so that results are reproducible
+    # regardless of what happens before the policy is called.
+    state = np.random.get_state()
+    np.random.seed(42)
+    mem_idxs = skimage.feature.peak_local_max(
+        dt + np.random.random(dt.shape) * 1e-4,
+        min_distance=3, threshold_abs=0, threshold_rel=0)  # indices=True is depreciated
+    np.random.set_state(state)
+
+    # Sort by dt value
+    # sorted_idxs = np.argsort(idx_vals)[::-1]
+    # idxs = idxs[sorted_idxs]
+
+    # After skimage upgrade to 0.13.0 peak_local_max returns peaks in
+    # descending order, versus ascending order previously.  Sort ascending to
+    # maintain historic behavior.
+    # idxs = np.array(sorted((z, y, x) for z, y, x in idxs))
+    nonzero_idxs = np.sum(mem_idxs, 1) > 0
+    mem_idxs = mem_idxs[nonzero_idxs]  # Throw out any weird 0,0,0 idxs
+    # mem_idx_vals = [dt[ix[0], ix[1], ix[2]] for ix in mem_idxs]
+    del dt
+
+    # logging.info('peaks: found %d local maxima', idxs.shape[0])
+    # self.coords = idxs
+
+    # Now do policypeaks
+    # Edge detection.
+    im = self.canvas.image[..., 0].astype(np.float32)
+    edges = ndimage.generic_gradient_magnitude(
+        im,
+        ndimage.sobel)
+
+    # Adaptive thresholding.
+    sigma = 49.0 / 6.0
+    thresh_image = np.zeros(edges.shape, dtype=np.float32)
+    ndimage.gaussian_filter(edges, sigma, output=thresh_image, mode='reflect')
+    filt_edges = edges > thresh_image
+
+    del edges, thresh_image
+
+    # This prevents a border effect where the large amount of masked area
+    # screws up the distance transform below.
+    if (self.canvas.restrictor is not None and
+        self.canvas.restrictor.mask is not None):
+      filt_edges[self.canvas.restrictor.mask] = 1
+
+    logging.info('peaks: filtering done')
+    dt = ndimage.distance_transform_edt(1 - filt_edges).astype(np.float32)
+    logging.info('peaks: edt done')
+
+    # Use a specifc seed for the noise so that results are reproducible
+    # regardless of what happens before the policy is called.
+    state = np.random.get_state()
+    np.random.seed(42)
+    idxs = skimage.feature.peak_local_max(
+        dt + np.random.random(dt.shape) * 1e-4,
+        indices=True, min_distance=3, threshold_abs=0, threshold_rel=0)
+    np.random.set_state(state)
+
+    # After skimage upgrade to 0.13.0 peak_local_max returns peaks in
+    # descending order, versus ascending order previously.  Sort ascending to
+    # maintain historic behavior.
+    idxs = np.array(sorted((z, y, x) for z, y, x in idxs))
+    idxs = np.concatenate((mem_idxs, idxs), 0)
+    idx_vals = [dt[ix[0], ix[1], ix[2]] for ix in idxs]
+    sorted_idxs = np.argsort(idx_vals)[::-1]
+    idxs = idxs[sorted_idxs]
+
+    nonzero_idxs = np.sum(idxs, 1) > 0
+    idxs = idxs[nonzero_idxs]  # Throw out any weird 0,0,0 idxs
+
+    logging.info('peaks: found %d local maxima', idxs.shape[0])
+    self.coords = idxs
+    self.reserved_ids = [None] * len(idxs)
+
+
 class PolicyMembrane(BaseSeedPolicy):
   """Attempts to find points away from edges in the image.
 
@@ -166,8 +260,12 @@ class PolicyMembrane(BaseSeedPolicy):
     logging.info('peaks: starting')
 
     # Edge detection.
+    mem_thresh = self.mem_seed_thresh
+    if mem_thresh is None:
+        print("Could not find a membrane threshold. Using 0.5.")
+        mem_thresh = 0.5
     edges = (
-        self.canvas.image.astype(np.float32)[..., 1] > 0.5).astype(
+        self.canvas.image.astype(np.float32)[..., 1] > mem_thresh).astype(
             np.float32)
 
     # Distance transform
@@ -210,34 +308,6 @@ class PolicyMembrane(BaseSeedPolicy):
         print(
           'Trimmed %s/%s seeds. (%s to process now).' % (
           pre_idxs - len(idxs), pre_idxs, len(idxs)))
-
-    if self.previous_seg is not None:
-      # Cycle through each of the segments > 0 in self.previous_seg. Choose the point with > dt.
-      # Add this to the top of the list along with reserved ID.
-      # 2. Cycle through each of the segs in self.previous_seg and get best idx
-      unique_prev = np.unique(self.previous_seg).astype(int)
-      unique_prev = unique_prev[unique_prev > 0]
-      max_potential_idx, max_potentials = [], []
-      margins = np.array(self.canvas.margin)  # // 2
-      dt_mask = np.zeros_like(dt)
-      dt_mask[
-          margins[0]:-margins[0],
-          margins[1]:-margins[1],
-          margins[2]:-margins[2]] = 1.
-      dt *= dt_mask
-      del dt_mask
-      for uidx in unique_prev:
-        mask = self.previous_seg == uidx
-        potential_idxs = dt * mask
-        max_potential = np.max(potential_idxs)
-        max_potential_id = np.unravel_index(
-          potential_idxs.ravel().argmax(),
-          dt.shape)
-        max_potentials += [max_potential]
-        max_potential_idx += [[max_potential_id]]
-      sort_idx = np.argsort(max_potentials)[::-1]
-      max_potential_idx = np.array(max_potential_idx)[sort_idx]
-      uidxs = np.array(unique_prev)[sort_idx]
 
     # After skimage upgrade to 0.13.0 peak_local_max returns peaks in
     # descending order, versus ascending order previously.  Sort ascending to

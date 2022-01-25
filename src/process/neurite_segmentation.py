@@ -21,6 +21,7 @@ def get_segmentation(
         vol,
         ffn_ckpt,
         ffn_model,
+        mem_seed_thresh=0.5,
         move_threshold=0.8,
         segment_threshold=0.5,
         seed_policy="PolicyMembrane",
@@ -60,6 +61,7 @@ def get_segmentation(
     runner.start(req, vol, tag='_inference')
     _, segments, probabilities = runner.run(
         (0, 0, 0),
-        model_shape)
+        model_shape,
+        mem_seed_thresh=mem_seed_thresh)
     return segments
 

@@ -6,24 +6,26 @@ import psycopg2
 import psycopg2.extras
 import psycopg2.extensions
 import numpy as np
+from db import credentials
 from tqdm import tqdm
 sshtunnel.DAEMON = True  # Prevent hanging process due to forward thread
 
 
 
 class db(object):
-    def __init__(self, config):
+    def __init__(self, ssh_forward=True):
         """Init global variables."""
         self.status_message = False
         self.db_schema_file = os.path.join('db', 'db_schema.txt')
+        self.db_ssh_forward = ssh_forward
         # Pass config -> this class
-        for k, v in list(config.items()):
-            setattr(self, k, v)
+        # for k, v in list(config.items()):
+        #     setattr(self, k, v)
 
     def __enter__(self):
         """Enter method."""
         try:
-            if main_config.db_ssh_forward:
+            if self.db_ssh_forward:
                 forward = sshtunnel.SSHTunnelForwarder(
                     credentials.machine_credentials()['ssh_address'],
                     ssh_username=credentials.machine_credentials()['username'],
@@ -45,7 +47,7 @@ class db(object):
                 cursor_factory=psycopg2.extras.RealDictCursor)
         except Exception as e:
             self.close_db()
-            if main_config.db_ssh_forward:
+            if self.db_ssh_forward:
                 self.forward.close()
             print(e)
         return self
@@ -57,7 +59,7 @@ class db(object):
             self.close_db(commit=False)
         else:
             self.close_db()
-        if main_config.db_ssh_forward:
+        if self.db_ssh_forward:
             self.forward.close()
         return self
 

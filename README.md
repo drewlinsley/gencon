@@ -29,4 +29,5 @@ These steps can be automated by running `bash process_rachel_data.sh`
 
 # TODO:
 - Change config class to yml files for flexibility.
-
+- Right now I'm symlinking the gcp models in with ln -s /media/data_cifs/projects/prj_connectomics/gcp_models/src/pl_modules/ src/gcp_models
+  Turn these into pip install packages then import those models instead

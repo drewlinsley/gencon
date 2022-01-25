@@ -1,12 +1,12 @@
 # Config for processing W-Q's volume
 
-name: "zebrafish"
+name: "mouse_ppc"
 token: "UTUOQJvbbyRFbD_NSnTMig"
-db_name: "zebrafish"
+db_name: "mouse_ppc"
 db_ssh_forward: True
 stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
 # stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
-project_directory: "${stem}/projects/prj_connectomics/zebrafish"
+project_directory: "${stem}/projects/prj_connectomics/mouse_ppc"
 file_save_str: "x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
 storage:
     raw_img_path: ""
@@ -22,18 +22,20 @@ storage:
 inference:
     membrane_ckpt: "${stem}/connectomics/checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/model_137000.ckpt-137000"
     ffn_ckpt: "${stem}/connectomics/ffn_ckpts/64_fov/ts_1/model.ckpt-1632105"
+    # ffn_ckpt: "${stem}/connectomics/ffn_ckpts/64_fov/feedback_hgru_v5_3l_notemp_f_v5_berson4x_w_inf_memb_r0/model.ckpt-360290"
     ffn_model: "feedback_hgru_v5_3l_notemp_f_v5_ts_1"
+    # ffn_model: "feedback_hgru_v5_3l_notemp_f_v4"
     ribbon_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/synapse_fgru_ckpts/synapse_fgru_v2_ckpts-85000"
     muller_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/celltype_ckpts/good"
-    move_threshold: 0.8
-    segment_threshold: 0.5
+    move_threshold: 0.7
+    segment_threshold: 0.4
 ds:
     path: "${project_directory}"
     img_layer: "color"
-    scale: [12.0, 12.0, 35.0]
-    vol_shape: [240, 1152, 1152]
-    resize_mod: [1., 1., 1.]
-    force_coord: [10533, 7817, 3547]
+    scale: [12.0, 12.0, 30.0]
+    vol_shape: [240, 1664, 1664]  # 1920, 1920]
+    resize_mod: [1., 1.4444, 1.4444]
+    force_coord: [2766, 5025, 1984]
     membrane_slice: [120, 384, 384]
     cube_size: [128, 128, 128]  # For creating wkw cubes
     segmentation_layer: False

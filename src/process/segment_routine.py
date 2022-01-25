@@ -4,9 +4,11 @@ import webknossos as wk
 from src.process import neurite_segmentation
 from src.process import membrane_segmentation
 from skimage.transform import resize
+from skimage.segmentation import relabel_sequential as rs
 import numpy as np
 from db import db
 from omegaconf import OmegaConf
+from matplotlib import pyplot as plt
 
 
 def main(conf, resize_order=3):
@@ -14,6 +16,7 @@ def main(conf, resize_order=3):
     conf = OmegaConf.load(conf)
     ds_input = conf.ds.path
     ds_layer = conf.ds.img_layer
+    project = conf.project_directory
     scale = tuple(conf.ds.scale)
     image_shape = conf.ds.vol_shape
     resize_mod = conf.ds.resize_mod
@@ -77,6 +80,8 @@ def main(conf, resize_order=3):
     segs = neurite_segmentation.get_segmentation(
         vol=vol_mem,
         ffn_ckpt=ffn_ckpt,
+        # seed_policy="PolicyMembraneAndPeaks",
+        mem_seed_thresh=0.8,
         move_threshold=move_threshold,
         segment_threshold=segment_threshold,
         ffn_model=ffn_model)  # Takes uint8 inputs
@@ -90,6 +95,28 @@ def main(conf, resize_order=3):
     if force_coord is None:
         # Finish coordinate in DB
         db.finish_coordinate(x, y, z)
+
+    try:
+    # Add a visualization of a middle slice for sanity check
+        mid = segs.shape[-1] // 2
+        figpath = os.path.join(project, "sanitycheck.png")
+        f = plt.figure()
+        plt.subplot(131)
+        plt.imshow(vol_mem[mid, ..., 0], cmap="Greys_r")
+        plt.title("image")
+        plt.axis("off")
+        plt.subplot(132)
+        plt.imshow(vol_mem[mid, ..., 1])
+        plt.title("membranes")
+        plt.axis("off")
+        plt.subplot(133)
+        plt.imshow(rs(segs[..., mid])[0])
+        plt.title("segments")
+        plt.axis("off")
+        plt.savefig(figpath)
+        plt.close(f)
+    except:
+        print("Failed to save sanity check visualization.")
     print("Finished volume at {} {} {}".format(x, y, z))
 
 

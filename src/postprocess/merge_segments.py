@@ -251,16 +251,16 @@ def get_remapping(main_margin, merge_margin, parallel, use_numba=False, merge_wi
 
 
 # @profile
-def remap(vol, min_vol_size, in_place, max_vox, connectivity=6, disable_max_vox=True):  # Moved max_vox to main loop
+def remap(vol, min_vol_size, in_place, max_vox):  # Moved max_vox to main loop
     """Run a remapping and iterate by max_vox."""
-    vol, _ = fastremap.renumber(vol, in_place=in_place, preserve_zero=True)  # .astype(np.uint32)
+    # vol, _ = fastremap.renumber(vol, in_place=in_place, preserve_zero=True)  # .astype(np.uint32)
     vol = vol.astype(dtype)
-    if not disable_max_vox:
-        it_max_vox = vol.max()
-        zeros = (vol > 0).astype(dtype)
-        vol += max_vox  # Update to max_vox
-        vol *= zeros
-        max_vox = max_vox + it_max_vox + 1  # Increment
+    # if not disable_max_vox:
+    it_max_vox = vol.max()
+    zeros = (vol > 0).astype(dtype)
+    vol += max_vox  # Update to max_vox
+    vol *= zeros
+    max_vox = max_vox + it_max_vox + 1  # Increment
     return vol, max_vox
 
 
@@ -601,9 +601,11 @@ def add_to_main(
             import pdb;pdb.set_trace()
 
 
-def batch_load(sel_coor, sel_path):
+def batch_load(sel_coor, sel_path, dtype):
     """Load a volume and return its coordinates."""
     vol = np.load(sel_path)
+    vol = fastremap.renumber(vol, in_place=True, preserve_zero=True)[0]
+    vol = vol.astype(dtype)
     return [vol, sel_coor]
 
 
@@ -731,7 +733,7 @@ def main(
             if len(z_sel_coors_main):
                 # Now lets parload the data, but sequentially iterate the maxvox, then parload into main
                 main_paths = ["{}.npy".format(seg_path.format(c[0], c[1], c[2], c[0], c[1], c[2])) for c in z_sel_coors_main]  # noqa
-                vols_vox = parallel(delayed(batch_load)(sel_coor, sel_path) for sel_coor, sel_path in tqdm(zip(z_sel_coors_main, main_paths), desc='Z (loading mains): {}'.format(z)))  # noqa
+                vols_vox = parallel(delayed(batch_load)(sel_coor, sel_path, dtype) for sel_coor, sel_path in tqdm(zip(z_sel_coors_main, main_paths), desc='Z (loading mains): {}'.format(z)))  # noqa
 
                 # Increment IDs so that they are strictly increasing
                 main_vols, main_sel_coors = [], []
@@ -759,7 +761,7 @@ def main(
             for it_merge in z_sel_coors_merge:
                 start = time.time()
                 it_merge_paths = ["{}.npy".format(seg_path.format(c[0], c[1], c[2], c[0], c[1], c[2])) for c in it_merge]  # noqa
-                vols_vox = parallel(delayed(batch_load)(sel_coor, sel_path) for sel_coor, sel_path in tqdm(zip(it_merge, it_merge_paths), desc='Z (loading merges): {}'.format(z)))  # noqa
+                vols_vox = parallel(delayed(batch_load)(sel_coor, sel_path, dtype) for sel_coor, sel_path in tqdm(zip(it_merge, it_merge_paths), desc='Z (loading merges): {}'.format(z)))  # noqa
                 merge_vols, max_voxes, new_sel_coors = [], [], []
                 for vm in vols_vox:
                     it_vol = vm[0]
@@ -794,7 +796,7 @@ def main(
             print("Finished h-merge")
 
             # Perform bottom-up merge
-            if zidx > 0:
+            if 0:  # disabled temporarily zidx > 0:
                 margin = unique_z[zidx] - unique_z[zidx - 1]
                 if margin < res_shape[-1]:
                     all_remaps = []

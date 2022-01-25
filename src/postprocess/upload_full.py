@@ -40,25 +40,36 @@ def main(conf, n_jobs=1):
 
         # Get native resolution
         ds = wk.Dataset(ds_input, scale=scale, exist_ok=True)
+        # try:
+        #     ds.delete_layer("segmentation")
+        #     print("Deleting prior segmentation layer.")
+        # except:
+        #     print("No prior segmentation layer found.")
+
+        # # Compress and downsample images
+        # color_layer = ds.get_layer(image_layer)
+        # color_mag = color_layer.get_mag("1")
+        # color_mag.compress()
+        # color_layer.downsample(compress=True)
+
+        # # Compress and downsample segmentationns
+        # segmentation_layer = ds.get_layer("segmentation")
+        # segmentation_mag = segmentation_layer.get_mag("1")
+        # segmentation_mag.compress() 
+        # segmentation_layer.downsample(compress=True)
+
+        # Upload
         try:
-            ds.delete_layer("segmentation")
+            ds.delete_layer("segmentations")
             print("Deleting prior segmentation layer.")
         except:
             print("No prior segmentation layer found.")
-
-        # Compress and downsample images
-        color_layer = ds.get_layer(image_layer)
-        color_mag = color_layer.get_mag("1")
-        color_mag.compress()
-        color_layer.downsample(compress=True)
-
-        # Compress and downsample segmentationns
-        segmentation_layer = ds.get_layer("segmentation")
-        segmentation_mag = segmentation_layer.get_mag("1")
-        segmentation_mag.compress() 
-        segmentation_layer.downsample(compress=True)
-
-        # Upload
+        try:
+            ds.delete_layer("synapses")
+            print("Deleting prior segmentation layer.")
+        except:
+            print("No prior segmentation layer found.")
+        ds.name = "wong_4"
         url = ds.upload()
         print(f"Successfully uploaded {url}")
 

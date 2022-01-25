@@ -1296,7 +1296,7 @@ class Runner(object):
       canvas.shifts = None
     return canvas, alignment
 
-  def get_seed_policy(self, corner, subvol_size, previous_origins=None):
+  def get_seed_policy(self, corner, subvol_size, previous_origins=None, mem_seed_thresh=None):
     """Get seed policy generating callable.
 
     Args:
@@ -1314,6 +1314,7 @@ class Runner(object):
     if previous_origins is not None:
       kwargs['previous_origins'] = previous_origins
       kwargs['previous_seg'] = self.init_seg_volume
+    kwargs['mem_seed_thresh'] = mem_seed_thresh
     return functools.partial(policy_cls, **kwargs)
 
   def save_segmentation(self, canvas, alignment, target_path, prob_path):
@@ -1371,7 +1372,7 @@ class Runner(object):
     #   np.savez_compressed(fd, qprob=prob)
     return canvas.segmentation, prob
 
-  def run(self, corner, subvol_size, reset_counters=True):
+  def run(self, corner, subvol_size, reset_counters=True, mem_seed_thresh=None):
     """Runs FFN inference over a subvolume.
 
     Args:
@@ -1411,9 +1412,9 @@ class Runner(object):
         np.savez_compressed(fd, im=canvas.image)
 
     if hasattr(self, 'previous_origins'):
-      seed_policy = self.get_seed_policy(corner, subvol_size, self.previous_origins)
+      seed_policy = self.get_seed_policy(corner, subvol_size, self.previous_origins, mem_seed_thresh=mem_seed_thresh)
     else:
-      seed_policy = self.get_seed_policy(corner, subvol_size)
+      seed_policy = self.get_seed_policy(corner, subvol_size, mem_seed_thresh=mem_seed_thresh)
     canvas.segment_all(seed_policy=seed_policy)
     segs, probabilities = self.save_segmentation(
       canvas, alignment, seg_path, prob_path)

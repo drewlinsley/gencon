@@ -7,6 +7,7 @@ from webknossos.dataset.properties import LayerViewConfiguration
 from skimage.segmentation import relabel_sequential as rs
 from skimage.transform import resize
 from omegaconf import OmegaConf
+import cc3d
 
 
 def main(conf):
@@ -96,6 +97,7 @@ def main(conf):
         print("Processing segs")
         seg_path = seg_path_str.format(x, y, z, x, y, z) + ".npy"
         seg = np.load(seg_path)
+        seg = cc3d.connected_components(seg, connectivity=6)
         seg = rs(seg)[0].astype(seg_dtype)
         seg = resize(seg, res_shape[::-1][:-1], anti_aliasing=False, preserve_range=True, order=0)
 
