@@ -1,4 +1,3 @@
-
 read -p "Enter the GPU to run on: " GPU
 
 CONFIG="configs/john_ball_test.yml"
