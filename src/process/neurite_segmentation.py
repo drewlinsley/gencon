@@ -58,10 +58,10 @@ def get_segmentation(
     req = inference_pb2.InferenceRequest()
     _ = text_format.Parse(ffn_config, req)
     runner = inference.Runner()
-    runner.start(req, vol, tag='_inference')
+    runner.start(req, vol, tag='_inference', batch_size=1)
     _, segments, probabilities = runner.run(
         (0, 0, 0),
         model_shape,
         mem_seed_thresh=mem_seed_thresh)
-    return segments
+    return segments, probabilities
 

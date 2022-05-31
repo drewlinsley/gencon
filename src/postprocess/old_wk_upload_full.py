@@ -10,7 +10,6 @@ from skimage.transform import resize
 from omegaconf import OmegaConf
 from tqdm import tqdm
 from glob import glob
-from joblib import Parallel, delayed
 
 
 def write_cube(add_segs, data, coord, image_shape, zstart, zend, zwritestart):
@@ -39,7 +38,7 @@ def main(conf, n_jobs=1):
     with wk.webknossos_context(url="https://webknossos.org", token=token):
 
         # Get native resolution
-        ds = wk.Dataset(ds_input, scale=scale, exist_ok=True)
+        ds = wk.Dataset(ds_input)
         # try:
         #     ds.delete_layer("segmentation")
         #     print("Deleting prior segmentation layer.")
@@ -53,7 +52,7 @@ def main(conf, n_jobs=1):
         # color_layer.downsample(compress=True)
 
         # # Compress and downsample segmentationns
-        segmentation_layer = ds.get_layer("segmentation")
+        # segmentation_layer = ds.get_layer("segmentation")
         # segmentation_mag = segmentation_layer.get_mag("1")
         # segmentation_mag.compress() 
         # segmentation_layer.downsample(compress=True)
@@ -83,7 +82,7 @@ def main(conf, n_jobs=1):
         # conventional_layer.downsample(compress=True)
         # muller_layer.downsample(compress=True)
 
-        ds.name = "wong_22"
+        ds.name = "wong_21"
         url = ds.upload()
         print(f"Successfully uploaded {url}")
 

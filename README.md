@@ -23,6 +23,10 @@ We will segment this volume by doing the following.
 These steps can be automated by running `bash process_rachel_data.sh`
 
 
+# Uploads
+If this fails due to an os_error, try `ulimit -n 2048`
+
+
 # Access the DB
 - psql <db_user> -h 127.0.0.1 -d <db_name>
 - psql wong -h 127.0.0.1 -d wong

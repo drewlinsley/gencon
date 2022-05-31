@@ -7,6 +7,7 @@ from glob import glob
 
 import webknossos as wk
 from webknossos.dataset import COLOR_CATEGORY, SEGMENTATION_CATEGORY
+from webknossos.dataset.properties import LayerViewConfiguration
 
 from db import db
 
@@ -28,7 +29,7 @@ def resize_wrapper(inp, shape):
 if __name__ == '__main__':
     debug = False
     dryrun = False
-    n_jobs = 12
+    n_jobs = -1
     conf = "configs/W-Q.yml"
     conf = OmegaConf.load(conf)
     ds_input = conf.ds.path
@@ -67,6 +68,7 @@ if __name__ == '__main__':
             exist_ok=True
         )
         layer_ribbon.add_mag(1)
+        layer_ribbon.default_view_configuration = LayerViewConfiguration(color=(255, 0, 0))
         mag1_ribbon = layer_ribbon.get_mag("1")
 
         layer_conventional = ds.add_layer(
@@ -78,6 +80,7 @@ if __name__ == '__main__':
             exist_ok=True
         )
         layer_conventional.add_mag(1)
+        layer_conventional.default_view_configuration = LayerViewConfiguration(color=(0, 255, 0))
         mag1_conventional = layer_conventional.get_mag("1")
 
         # Loop through coordinates
@@ -127,7 +130,7 @@ if __name__ == '__main__':
                     # preds_ribbon = np.maximum(preds[0], existing_ribbon)
                     # preds_conventional = np.maximum(preds[1], existing_conventional)
 
-                    preds_ribbon, preds_conventional = preds[1], preds[0]  # These were transposed originally
+                    preds_ribbon, preds_conventional = preds[0], preds[1]  # These were transposed originally
                     if debug:
                         existing_images = images.read((x, y, z), shape)[0]
                         from matplotlib import pyplot as plt
@@ -145,9 +148,9 @@ if __name__ == '__main__':
                     mag1_ribbon.write(preds_ribbon, (x, y, z))
                     mag1_conventional.write(preds_conventional, (x, y, z))
 
-        if not dryrun:
-            mag1_ribbon.compress()
-            mag1_conventional.compress()
-            layer_ribbon.downsample(compress=True)
-            layer_conventional.downsample(compress=True)
+        # if not dryrun:
+        #     mag1_ribbon.compress()
+        #     mag1_conventional.compress()
+        #     layer_ribbon.downsample(compress=True)
+        #     layer_conventional.downsample(compress=True)
 

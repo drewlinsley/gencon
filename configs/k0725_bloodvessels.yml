@@ -1,13 +1,13 @@
 # Config for processing W-Q's volume
 
-name: "mouse_ppc"
+name: "k0725_bloodvessels"
 token: "UTUOQJvbbyRFbD_NSnTMig"
-db_name: "mouse_ppc"
+db_name: "k0725_bloodvessels"
 db_ssh_forward: True
 # stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
 stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
-project_directory: "${stem}/projects/prj_connectomics/mouse_ppc"
-file_save_str: "x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
+project_directory: "${stem}/projects/prj_connectomics/k0725_bloodvessels"
+file_save_str: "x{}/y{}/z{}/110629_k0725_bloodvessels_mag1_x{}_y{}_z{}"
 storage:
     raw_img_path: ""
     merge_seg_path: "${project_directory}/merge_mag1_segs"
@@ -31,14 +31,14 @@ inference:
     segment_threshold: 0.4
     membrane_seed_threshold: 0.9
     truncation: 100
-    skip_membranes_if_completed: True
+    skip_membranes_if_completed: False
 ds:
     path: "${project_directory}"
     img_layer: "color"
-    scale: [12.0, 12.0, 30.0]
+    scale: [13.199999809265137, 13.199999809265137, 26.0]
     vol_shape: [240, 1152, 1152]  # 1920, 1920]
     resize_mod: [1., 1., 1.]
-    force_coord: [2766, 5025, 1984]
+    force_coord: [700, 12871, 2271]  # [1093, 5000, 3238]
     membrane_slice: [120, 384, 384]
     cube_size: [128, 128, 128]  # For creating wkw cubes
     segmentation_layer: False

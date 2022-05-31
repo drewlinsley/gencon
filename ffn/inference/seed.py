@@ -264,9 +264,15 @@ class PolicyMembrane(BaseSeedPolicy):
     if mem_thresh is None:
         print("Could not find a membrane threshold. Using 0.5.")
         mem_thresh = 0.5
-    edges = (
-        self.canvas.image.astype(np.float32)[..., 1] > mem_thresh).astype(
-            np.float32)
+
+    if isinstance(self.canvas.image, dict):
+        edges = (
+            self.canvas.image[1].astype(np.float32)[..., 1] > mem_thresh).astype(
+               np.float32)
+    else:
+        edges = (
+            self.canvas.image.astype(np.float32)[..., 1] > mem_thresh).astype(
+               np.float32)
 
     # Distance transform
     logging.info('peaks: filtering done')
@@ -280,7 +286,7 @@ class PolicyMembrane(BaseSeedPolicy):
     np.random.seed(42)
     idxs = skimage.feature.peak_local_max(
         dt + np.random.random(dt.shape) * 1e-4,
-        min_distance=3, threshold_abs=0, threshold_rel=0)  # indices=True is depreciated
+        min_distance=7, threshold_abs=0, threshold_rel=0)  # indices=True is depreciated
     np.random.set_state(state)
 
     # Sort by dt value

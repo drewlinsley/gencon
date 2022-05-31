@@ -52,12 +52,11 @@ def main(conf, n_jobs=1):
     image_layer = conf.ds.img_layer
     scale = tuple(conf.ds.scale)
     image_shape = conf.ds.vol_shape[::-1]
-    mem_path_str = conf.storage.mem_path_str
-    seg_path_str = conf.storage.seg_path_str
     merge_path = conf.storage.merge_seg_path
     res_shape = np.asarray(image_shape)
     extent = conf.ds.extent
     token = conf.token
+    color_layer_name = conf.ds.img_layer
 
     seg_dtype = np.uint32
     mem_dtype = np.uint8
@@ -75,7 +74,7 @@ def main(conf, n_jobs=1):
         # Compress and downsample images
         color_layer = ds.get_layer(image_layer)
         color_mag = color_layer.get_mag("1")
-        color_layer = ds.layers["color"]
+        color_layer = ds.layers[color_layer_name]
         color_mag = color_layer.get_mag("1")
         # color_layer.downsample(compress=True)
 
@@ -129,13 +128,17 @@ def main(conf, n_jobs=1):
                 for h in range(0, height, image_shape[1]):
                     for w in range(0, width, image_shape[2]):
                         coords.append((h, w))
-                merged_segs = np.load(f)
+                try:
+                    merged_segs = np.load(f)
+                except:
+                    import pdb;pdb.set_trace()
+                    print("Failed to load {}".format(f))
 
                 # Trim
                 if extent:
                     merged_segs = merged_segs[:height, :width, :]
 
-                if 0:  # idx > 0:
+                if idx > 0:
                     # BU merge
                     all_remaps = process_bu_merge(
                         main=merged_segs,
@@ -167,9 +170,9 @@ def main(conf, n_jobs=1):
         # Downsample
         layer_segmentations.downsample(compress=True)
 
-        # Upload
-        url = ds.upload()
-        print(f"Successfully uploaded {url}")
+        # # Upload
+        # url = ds.upload()
+        # print(f"Successfully uploaded {url}")
 
 
 if __name__ == '__main__':

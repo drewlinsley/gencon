@@ -36,6 +36,7 @@ import numpy as np
 import tensorflow as tf
 from .inference_utils import timer_counter
 from skimage.filters import gaussian
+from joblib import Parallel, delayed
 
 # pylint:disable=g-import-not-at-top
 try:
@@ -43,6 +44,12 @@ try:
 except ImportError:  # for Python 3 compat
   import _thread as thread
 # pylint:enable=g-import-not-at-top
+# import lycon
+
+
+def resize(im, size, interpolation="bilinear"):
+    return lycon.resize(im, width=size[1], height=size[0], interpolation=lycon.Interpolation.NEAREST)
+    # return imresize(im, size, interpolation=interpolation, mode="F")
 
 
 class BatchExecutor(object):
@@ -125,7 +132,7 @@ class ThreadingBatchExecutor(BatchExecutor):
   if the batch size is 1.
   """
 
-  def __init__(self, model, counters, batch_size, expected_clients=1):
+  def __init__(self, model, counters, batch_size, augs=[], expected_clients=1):
     super(ThreadingBatchExecutor, self).__init__(model, counters,
                                                  batch_size)
     self._lock = threading.Lock()
@@ -151,6 +158,7 @@ class ThreadingBatchExecutor(BatchExecutor):
     self.input_image = np.zeros([batch_size] + self._input_image_size + [2],
                                 dtype=np.float32)
     self.th_executor = None
+    self.augs = augs
 
   def start_server(self):
     """Starts the server which will evaluate TF models.
@@ -175,69 +183,189 @@ class ThreadingBatchExecutor(BatchExecutor):
     self._curr_infeed = 0
     logging.info('Executor starting.')
     self.squeeze_shape = np.array(self.input_image.shape[1:])
-    while self.active_clients or self.total_clients < self.expected_clients:
-      self.counters['executor-clients'].Set(self.active_clients)
 
-      with timer_counter(self.counters, 'executor-input'):
-        ready = []
-        while (len(ready) < min(self.active_clients, self.batch_size) or
-               not self.active_clients):
-          try:
-            data = self.input_queue.get(timeout=5)
-          except queue.Empty:
-            continue
-          if data == 'exit':
-            logging.info('Executor shut down requested.')
-            return
-          elif isinstance(data, int):
-            client_id = data
-            if client_id >= 0:
-              self.total_clients += 1
-              self.active_clients += 1
-              logging.info('client %d starting', client_id)
+    with Parallel(n_jobs=32, prefer="threads") as parallel:
+      while self.active_clients or self.total_clients < self.expected_clients:
+        self.counters['executor-clients'].Set(self.active_clients)
+
+        with timer_counter(self.counters, 'executor-input'):
+          ready = []
+          while (len(ready) < min(self.active_clients, self.batch_size) or
+                 not self.active_clients):
+            try:
+              data = self.input_queue.get(timeout=5)
+            except queue.Empty:
+              continue
+            if data == 'exit':
+              logging.info('Executor shut down requested.')
+              return
+            elif isinstance(data, int):
+              client_id = data
+              if client_id >= 0:
+                self.total_clients += 1
+                self.active_clients += 1
+                logging.info('client %d starting', client_id)
+              else:
+                logging.info('client %d terminating', -client_id - 1)
+                self.active_clients -= 1
             else:
-              logging.info('client %d terminating', -client_id - 1)
-              self.active_clients -= 1
-          else:
-            client_id, seed, image, fetches = data
-            l = len(ready)
-            self.reslicing = None
-            # im_shape = np.array(image.shape)
-            # if not np.all(im_shape == self.squeeze_shape):
-            #   dhwc_diff = im_shape - self.squeeze_shape
-            #   max_d, max_h, max_w, max_c = im_shape
-            #   if dhwc_diff[0] != 0:
-            #     seed = np.concatenate((seed, np.zeros((np.abs(dhwc_diff[0]), im_shape[1], im_shape[2]))), 1)
-            #     image = np.concatenate((image, np.zeros((np.abs(dhwc_diff[0]), im_shape[1], im_shape[2], im_shape[3]))), 1)
-            #     im_shape = np.array(image.shape)
-            #   if dhwc_diff[1] != 0:
-            #     seed = np.concatenate((seed, np.zeros((im_shape[0], np.abs(dhwc_diff[1]), im_shape[2]))), 1)
-            #     image = np.concatenate((image, np.zeros((im_shape[0], np.abs(dhwc_diff[1]), im_shape[2], im_shape[3]))), 1)
-            #     im_shape = np.array(image.shape)
-            #   if dhwc_diff[2] != 0:
-            #     seed = np.concatenate((seed, np.zeros((im_shape[0], im_shape[1], np.abs(dhwc_diff[2])))), 2)
-            #     image = np.concatenate((image, np.zeros((im_shape[0], im_shape[1], np.abs(dhwc_diff[2]), im_shape[3]))), 2)
-            #   if dhwc_diff[3] != 0:
-            #     raise RuntimeError(dhwc_diff)
-            #   self.reslicing = [slice(999), slice(0, max_d), slice(0, max_h), slice(0, max_w), slice(999)]
-            self.input_seed[l, ..., 0] = seed
-            self.input_image[l, ..., :] = image
-            ready.append(client_id)
+              client_id, seed, image, fetches = data
+              l = len(ready)
+              self.reslicing = None
+              # self.input_seed[l, ..., 0] = seed
+              # self.input_image[l, ..., :] = image
+              self.input_seed[:] = seed[..., None]
+              self.input_image = image
+              ready.append(client_id)
 
-      if ready:
-        self._schedule_batch(ready, fetches)
+        if ready:
+          self._schedule_batch(ready, fetches, parallel=parallel)
 
     logging.info('Executor terminating.')
 
-  def _schedule_batch(self, client_ids, fetches):
+  def _schedule_batch(self, client_ids, fetches, parallel=None):
     """Schedules a single batch for execution."""
     with timer_counter(self.counters, 'executor-inference'):
       try:
-        ret = self.session.run(fetches, {self.model.input_seed: self.input_seed,self.model.input_patches: self.input_image})
-        logit_shape = ret['logits'].shape
+
+        # reshapes = [64, 32, 16]  # 48, 32, 16]  # , 48]  # [64, 56, 48, 32]
+        # flips = [(0, 0)]  # , (0, 1), (1, 1)]  # [0, 1]  # [0, 1]
+        # add_noise = True
+
+        # from itertools import product
+        # from skimage.transform import resize
+
+        seed = self.input_seed
+        data = self.input_image
+
+        seed_template = seed[0]
+        data_template = data[0]
+        data_shape = data_template.shape
+
+        # augs = [x for x in product(reshapes, flips)]
+        # augs = []
+
+        if 0:  # len(augs):
+          # First augment
+          _, _, h, _, _ = data.shape
+          aug_data, seeds = [], []
+          for aug in augs:
+            scale, (flip, flip_dim) = aug
+            it_data = np.copy(data_template)
+            
+            if add_noise:
+              noise = np.random.rand(*it_data.shape[:-1]) * 0.1
+              noise = np.stack((noise, np.zeros_like(noise)), -1)
+              it_data += noise
+
+            if flip:
+              it_data = np.flip(it_data, axis=flip_dim)
+
+            if scale != h:
+              res_data = parallel(
+                delayed(
+                  lambda x, y: resize(
+                    x,
+                    y)  # ,
+                    # anti_aliasing=True,
+                    # preserve_range=True,
+                    # order=1)
+                  )(vm, [scale, scale]) for vm in it_data)
+              # res_data = []
+              # for x in it_data:
+              #   res_data.append(
+              #     resize(
+              #       x,
+              #       [scale, scale],
+              #       anti_aliasing=True,
+              #       preserve_range=True,
+              #       order=1)
+              #   )
+              it_data = np.stack((res_data), 0)
+              pad_hw = (data_shape[1] - scale) // 2
+
+              # Now pad
+              # print("mins: {} maxs: {}".format(it_data.min((0, 1, 2)), it_data.max((0, 1, 2))))
+              # pad_im = np.pad(
+              #   it_data[..., [0]],
+              #   [[0, 0], [pad_hw, pad_hw], [pad_hw, pad_hw], [0, 0]],
+              #   mode="constant",
+              #   constant_values=-1.5)
+              # pad_mem = np.pad(
+              #   it_data[..., [1]],
+              #   [[0, 0], [pad_hw, pad_hw], [pad_hw, pad_hw], [0, 0]],
+              #   mode="constant",
+              #   constant_values=-3.88)
+              # -1.5, -3.88, 3.17, 3.84
+              it_data = np.pad(
+                it_data,
+                [[0, 0], [pad_hw, pad_hw], [pad_hw, pad_hw], [0, 0]],
+                mode="edge")  # "constant",
+
+              # it_data = np.concatenate((pad_im, pad_mem), -1)
+            aug_data.append(it_data)
+            seeds.append(seed_template)
+          aug_data = np.stack(aug_data, 0)
+          seeds = np.stack(seeds, 0)
+        else:
+          seeds = seed
+          aug_data = data
+
+        # ret = self.session.run(fetches, {self.model.input_seed: seed, self.model.input_patches: data})
+        ret = self.session.run(fetches, {self.model.input_seed: seeds, self.model.input_patches: aug_data})
+        # from matplotlib import pyplot as plt;plt.subplot(223);plt.imshow(ret["logits"][0, 8, ..., 0]);plt.subplot(224);plt.imshow(ret["logits"][1, 8, ..., 0]);plt.subplot(221);plt.imshow(aug_data[0, 8, ..., 0]);plt.subplot(222);plt.imshow(aug_data[1, 8, ..., 0]);plt.show()
+        if len(self.augs):
+          _, h, _, _ = ret["logits"][0].shape
+
+          # Then unwind augmentations
+          logits, new_seeds = [], []
+          for it_data, it_seed, aug in zip(ret["logits"], seeds, self.augs):
+            scale, (flip, flip_dim) = aug
+            # new_seeds.append(it_seed)
+
+            if flip:
+              it_data = np.flip(it_data, axis=flip_dim)
+
+            if scale < 1:  # != h:
+
+              # Remove pad
+              pad_hw = int((data_shape[1] - (data_shape[1] * scale)) // 2)
+              it_data = it_data[:, pad_hw: -pad_hw, pad_hw: -pad_hw]
+
+              # Resize
+              # it_data = ndimage.zoom(it_data, [1, data_shape[1], data_shape[2], 1], order=1, prefilter=False)  # , grid_mode=True)
+              res_data = parallel(
+                delayed(
+                  lambda x, y: resize(
+                    x,
+                    y)  # ,
+                    # anti_aliasing=True,
+                    # preserve_range=True,
+                    # order=1)
+                  )(vm, [data_shape[1], data_shape[2]]) for vm in it_data)
+              # res_data = []
+              # for x in it_data:
+              #   res_data.append(
+              #     resize(
+              #       x,
+              #       [data_shape[1], data_shape[2]],
+              #       anti_aliasing=True,
+              #       preserve_range=True,
+              #       order=1)
+              #   )
+              it_data = np.stack((res_data), 0)[..., None]
+            logits.append(it_data)
+          logits = np.stack(logits, 0).mean(0, keepdims=True)
+          # import pdb;pdb.set_trace()
+          # from matplotlib import pyplot as plt;plt.subplot(223);plt.imshow(ret["logits"][0, 8, ..., 0]);plt.subplot(224);plt.imshow(logits[2, ..., 0]);plt.subplot(221);plt.imshow(aug_data[0, 8, ..., 0]);plt.subplot(222);plt.imshow(aug_data[2, 8, ..., 0]);plt.show()
+
+          # seeds = np.stack(new_seeds, 0).mean(0, keepdims=True)
+          ret["logits"] = np.ones_like(ret["logits"]) * logits  # replicate our predictions -> batch size
+
+        # logit_shape = ret['logits'].shape
         # # ret['logits'] = (ret['logits'] - ret['logits'].ravel().mean()) / (ret['logits'].std() + 1e-4)
-        ret['logits'] = gaussian(ret['logits'].squeeze().transpose(1, 2, 0), sigma=1.5, multichannel=True, preserve_range=True, truncate=100)  # .transpose(2, 0, 1)
-        ret['logits'] = ret['logits'].transpose(2, 0, 1).reshape(logit_shape)
+        # ret['logits'] = gaussian(ret['logits'].squeeze().transpose(1, 2, 0), sigma=1.5, multichannel=True, preserve_range=True, truncate=100)  # .transpose(2, 0, 1)
+        # ret['logits'] = ret['logits'].transpose(2, 0, 1).reshape(logit_shape)
 
         if self.reslicing is not None:
           ret['logits'] = ret['logits'][self.reslicing]

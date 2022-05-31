@@ -39,7 +39,7 @@ def main(conf, n_jobs=1):
     with wk.webknossos_context(url="https://webknossos.org", token=token):
 
         # Get native resolution
-        ds = wk.Dataset(ds_input, scale=scale, exist_ok=True)
+        ds = wk.Dataset(ds_input)
         # try:
         #     ds.delete_layer("segmentation")
         #     print("Deleting prior segmentation layer.")

@@ -250,6 +250,7 @@ class Canvas(object):
                movement_policy_fn=None,
                halt_signaler=no_halt(),
                keep_history=False,
+               augs=[],
                checkpoint_path=None,
                checkpoint_interval_sec=0,
                corner_zyx=None):
@@ -281,6 +282,8 @@ class Canvas(object):
     self.image = image
     self.executor = tf_executor
     self._exec_client_id = None
+
+    self.augs = augs
 
     self.options = inference_pb2.InferenceOptions()
     self.options.CopyFrom(options)
@@ -436,7 +439,29 @@ class Canvas(object):
       # Top-left corner of the FoV.
       start = np.array(pos) - self.margin
       end = start + self._input_image_size
-      img = self.image[tuple([slice(s, e) for s, e in zip(start, end)])]
+      if isinstance(self.image, dict):
+        # Must scale the start/end location per volume
+        imgs = []
+        data_shape = (end - start)[1]
+        for k, v in self.image.items():
+          new_start, new_end = start * k, end * k
+          new_start[0] = start[0]
+          new_end[0] = end[0]
+          new_start = new_start.astype(int)
+          new_end = new_end.astype(int)
+          img = v[tuple([slice(s, e) for s, e in zip(new_start, new_end)])]
+
+          # Now pad
+          if k < 1:
+            pad_hw = int((data_shape - (data_shape * k)) // 2)
+            img = np.pad(
+              img,
+              [[0, 0], [pad_hw, pad_hw], [pad_hw, pad_hw], [0, 0]],
+              mode="edge")  # "constant",
+          imgs.append(img)
+        img = np.stack(imgs, 0)
+      else:
+        img = self.image[tuple([slice(s, e) for s, e in zip(start, end)])][None]
       # img = self.image[[slice(s, e) for s, e in zip(start, end)]]  # Depreciated lists
 
       # Record the amount of time spent on non-prediction tasks.
@@ -542,6 +567,9 @@ class Canvas(object):
         if diff < self.options.consistency_threshold:
           break
 
+        # if len(logits) > 1:
+        #   # Test-time augmentation
+        #   import pdb;pdb.set_trace()
         prob_seed, logit_seed = prob, logits
 
       if self.halt_signaler.is_halt(fetches=fetches, pos=pos,
@@ -674,6 +702,41 @@ class Canvas(object):
     if self._seed_policy_state is not None:
       self.seed_policy.set_state(self._seed_policy_state)
       self._seed_policy_state = None
+
+    # If requested, create augmented versions of the main image volume.
+    # reshapes = [1, 0.75, 0.5, 0.25]  # 48, 32, 16]  # , 48]  # [64, 56, 48, 32]
+    # flips = [(0, 0)]  # , (0, 1), (1, 1)]  # [0, 1]  # [0, 1]
+    add_noise = False
+
+
+    data = self.image
+    data_shape = data.shape
+
+    augs = self.augs
+    # augs = []
+    
+    if len(augs):
+       _, h, w, _ = data.shape
+       aug_data = {}
+       for aug in augs:
+         scale, (flip, flip_dim) = aug
+         it_data = np.copy(data)
+
+         if add_noise:
+           noise = np.random.rand(*it_data.shape[:-1]) * 0.1
+           noise = np.stack((noise, np.zeros_like(noise)), -1)
+           it_data += noise
+
+         if flip:
+           it_data = np.flip(it_data, axis=flip_dim)
+
+         if scale != 1:
+           import lycon
+           size = [int(h * scale), int(w * scale)]
+           res_data = [lycon.resize(x, width=size[1], height=size[0], interpolation=lycon.Interpolation.CUBIC) for x in it_data]
+           it_data = np.stack((res_data), 0)
+         aug_data[scale] = it_data
+       self.image = aug_data
 
     with timer_counter(self.counters, 'segment_all'):
       mbd = self.options.min_boundary_dist
@@ -1058,7 +1121,13 @@ class Runner(object):
       exec_cls = executor.ThreadingBatchExecutor
 
     ########################## INFERENCE GRAPH MADE
-    self.executor = exec_cls(self.model, self.counters, batch_size)
+    from itertools import product
+    # reshapes = [1, 0.75]  # , 0.5, 0.25]  # 48, 32, 16]  # , 48]  # [64, 56, 48, 32]
+    # flips = [(0, 0)]  # , (0, 1), (1, 1)]  # [0, 1]  # [0, 1]
+    augs = []  # [x for x in product(reshapes, flips)]
+    self.augs = augs
+
+    self.executor = exec_cls(self.model, self.counters, batch_size, augs=self.augs)
     self.movement_policy_fn = movement.get_policy_fn(request, self.model)
 
     if self.topup is None:
@@ -1282,6 +1351,7 @@ class Runner(object):
             self.request.segmentation_output_dir, corner),
         checkpoint_interval_sec=self.request.checkpoint_interval,
         corner_zyx=dst_corner,
+        augs=self.augs,
         **canvas_kwargs)
 
     if self.request.HasField('init_segmentation'):

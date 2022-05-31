@@ -3,10 +3,9 @@ import os
 import argparse
 import numpy as np
 import pandas as pd
-from db import db
+# from db import db
+import db
 from glob2 import glob
-from utils import logger
-from config import Config
 
 
 def main(
@@ -14,22 +13,19 @@ def main(
         reset_coordinates=False,
         reset_priority=False,
         reset_config=False,
+        reset_table=False,
         populate_db=None,
         get_progress=False,
         berson_correction=True,
         priority_list=None):
     """Routines for adjusting the DB."""
-    config = Config()
-    log = logger.get(os.path.join(config.log_dir, 'setup'))
     if init_db:
         # Create the DB from a schema file
         db.initialize_database()
-        log.info('Initialized database.')
 
     if reset_coordinates:
         # Create the DB from a schema file
         db.reset_database()
-        log.info('Reset coordinates.')
 
     if populate_db:
         # Fill the DB with a coordinates + global config
@@ -51,12 +47,13 @@ def main(
     if reset_priority:
         # Create the DB from a schema file
         db.reset_priority()
-        log.info('Reset priorities.')
+
+    if reset_table:
+        db.reset_a_table()
 
     if reset_config:
         # Create the global config to starting values
         db.reset_config()
-        log.info('Reset config.')
 
     if get_progress:
         # Return the status of segmentation
@@ -97,6 +94,11 @@ if __name__ == '__main__':
         dest='reset_coordinates',
         action='store_true',
         help='Reset coordinate progress.')
+    parser.add_argument(
+        '--reset_table',
+        dest='reset_table',
+        action='store_true',
+        help='Reset status for a table.')
     parser.add_argument(
         '--reset_priority',
         dest='reset_priority',

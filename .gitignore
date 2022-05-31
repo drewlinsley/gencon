@@ -21,3 +21,6 @@ webknossos-wrap
 *.error
 *.output
 
+merge_rib_mito.sh
+package_2.sh
+

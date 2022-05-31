@@ -9,7 +9,19 @@ import numpy as np
 from db import db
 from omegaconf import OmegaConf
 from matplotlib import pyplot as plt
-import lycon
+from tensorflow.compat import v1 as tf
+from ffn.training.models.ffn_adaptation import ConvStack3DFFNModel as FFNModel
+from joblib import Parallel, delayed
+from tqdm import tqdm
+
+
+def sample_batch(vol_mem, bounds, cube_size):
+    starts = [np.random.randint(0, b) for b in bounds]
+    vol = vol_mem[
+            starts[0]: starts[0] + cube_size[0],
+            starts[1]: starts[1] + cube_size[1],
+            starts[2]: starts[2] + cube_size[2]]
+    return vol
 
 
 def main(conf, resize_order=3):
@@ -49,17 +61,17 @@ def main(conf, resize_order=3):
     os.makedirs(os.path.sep.join(mem_path.split(os.path.sep)[:-1]), exist_ok=True)
     os.makedirs(os.path.sep.join(seg_path.split(os.path.sep)[:-1]), exist_ok=True)
 
-    # Get images
-    ds = wk.Dataset(ds_input, scale=scale, exist_ok=True)
-    layer = ds.get_layer(ds_layer)
-    mag1 = layer.get_mag("1")
-    print("Extracting images")
-    cube_in = mag1.read((x, y, z), image_shape[::-1])[0]
-
     # Segment membranes
     if os.path.exists("{}.npy".format(mem_path)) and allow_skip:
         vol_mem = np.load("{}.npy".format(mem_path))
     else:
+        # Get images
+        ds = wk.Dataset(ds_input, scale=scale, exist_ok=True)
+        layer = ds.get_layer(ds_layer)
+        mag1 = layer.get_mag("1")
+        print("Extracting images")
+        cube_in = mag1.read((x, y, z), image_shape[::-1])[0]
+
         # Resize images
         res_shape = np.asarray(image_shape)
         res_shape = res_shape.astype(float) / np.asarray(resize_mod).astype(float)
@@ -85,78 +97,69 @@ def main(conf, resize_order=3):
         np.save(mem_path, vol_mem)
         del res_cube_in
 
-    # TEST
-    # vol_mem = resize(vol_mem, res_shape[::-1][:-1], anti_aliasing=True, preserve_range=True, order=resize_order)
-
     # Truncate the membranes to force oversegmentation
-    mems = np.copy(vol_mem)
-    vol_mem_mem = vol_mem[..., 1:].max(-1, keepdims=True)
-    vol_mem = np.concatenate((vol_mem[..., [0]], vol_mem_mem), -1)
-    del vol_mem_mem
-
     if truncation:
         vol_mem[..., 1] = (1 - (np.clip(255 - vol_mem[..., 1], 0, truncation) / truncation)) * 255.
 
-    # Segment neurites
-    print("Flood filling membranes")
-    segs, probs = [], []
-    scales = [1.]  # , 1.25, 0.75]
-    for scale in scales:
-        if scale != 1:
-            h, w = vol_mem.shape[-3], vol_mem.shape[-2]
-            size = [int(h * scale), int(w * scale)]
-            res_data = [lycon.resize(x, width=size[1], height=size[0], interpolation=lycon.Interpolation.CUBIC) for x in vol_mem]
-            it_vol_mem = np.stack((res_data), 0)
-        else:
-            it_vol_mem = vol_mem
-        seg, prob = neurite_segmentation.get_segmentation(
-            vol=it_vol_mem,
-            ffn_ckpt=ffn_ckpt,
-            # seed_policy="PolicyMembraneAndPeaks",
-            mem_seed_thresh=mem_seed_threshold,
-            move_threshold=move_threshold,
-            segment_threshold=segment_threshold,
-            ffn_model=ffn_model)  # Takes uint8 inputs
-        segs.append(seg)
-        probs.append(prob)
-    if len(probs) > 1:
-        # Resegment the average probability maps
-        probs = np.stack(probs).mean(0)
-    else:
-        segs = segs[0]
 
-    # Resize and transpose segments
-    # segs = resize(seg.transpose(1, 2, 0), image_shape[::-1][:-1], anti_aliasing=False, preserve_range=True, order=1)
-    segs = segs.transpose(1, 2, 0)  # Keep low-res for post-processing
-    # from matplotlib import pyplot as plt;plt.subplot(131);plt.imshow(cube_in[..., 32]);plt.subplot(132);plt.imshow(vol_mem[32]);plt.subplot(133);plt.imshow(segs[..., 32]);plt.show()
-    np.save(seg_path, segs)
+    # Adapt the FFN
+    cube_size = [32, 48, 48]
+    batch_size = 1
+    steps = 1000
+    bounds = np.asarray(vol_mem.shape)[:-1] - np.asarray(cube_size)
+    with tf.Graph().as_default():
+        ffn = FFNModel(
+            deltas=[10, 10, 10],
+            is_training=True,
+            adabn=True,
+            with_membrane=True,
+            batch_size=batch_size,
+            im_mean=128.,
+            im_stddev=30.,
+            fov_size=cube_size[::-1])
+        ffn()  # ffn.input_patches)
+ 
+        with tf.Session() as sess:
+            init = tf. global_variables_initializer()
+            sess.run(init)
 
-    if not force_coord:
-        # Finish coordinate in DB
-        db.finish_coordinate(x, y, z)
+            # Restore variables that can be restored
+            existing_vars = set([x.name for x in tf.get_collection_ref(tf.GraphKeys.GLOBAL_VARIABLES)])
+            ckpt_vars = set([x[0] + ":0" for x in tf.train.list_variables(ffn_ckpt)])
+            restore_var_names = list(existing_vars.intersection(ckpt_vars))
+            restore_vars = [x for x in tf.get_collection_ref(tf.GraphKeys.GLOBAL_VARIABLES) if x.name in restore_var_names]
+            saver = tf.train.Saver(restore_vars)
+            saver.restore(sess, ffn_ckpt)
 
-    try:
-    # Add a visualization of a middle slice for sanity check
-        mid = segs.shape[-1] // 2
-        figpath = os.path.join(project, "sanitycheck.png")
-        f = plt.figure()
-        plt.subplot(131)
-        plt.imshow(vol_mem[mid, ..., 0], cmap="Greys_r")
-        plt.title("image")
-        plt.axis("off")
-        plt.subplot(132)
-        plt.imshow(vol_mem[mid, ..., 1])
-        plt.title("membranes")
-        plt.axis("off")
-        plt.subplot(133)
-        plt.imshow(rs(segs[..., mid])[0])
-        plt.title("segments")
-        plt.axis("off")
-        plt.savefig(figpath)
-        plt.close(f)
-    except:
-        print("Failed to save sanity check visualization.")
-    print("Finished volume at {} {} {}".format(x, y, z))
+            # Loop through data
+            scale = 1.
+            message = "Preferring scale: {}, Loss: {}, Grad: {}"
+            pb = tqdm(range(steps), desc=message.format(scale, "...", "..."), total=steps)
+            with Parallel(n_jobs=batch_size, prefer="threads") as parallel:
+                for step in pb:
+                    data = parallel(delayed(sample_batch)(vol_mem, bounds, cube_size) for idx in range(batch_size))
+                    data = np.asarray(data)
+                    # data = (data - 128.) / 30.
+                    feed_dict = {ffn.input_patches: data}
+                    result = sess.run(ffn.ops, feed_dict=feed_dict)
+                    scale = result["scale"]
+                    loss = result["loss"]
+                    grad = result["scale_grad"]
+                    pb.set_description(message.format(scale, loss, grad))
+        import pdb;pdb.set_trace()
+        print("Final scale: {}".format(scale))
+
+
+
+    # Sample coordinates.
+    
+
+    # Model takes the input and applies a learned resize tf.image.resize_bilinear
+
+    # Apply a random mask to the image. Train a readout to predict this cube.
+
+    # Find the scaling where this readout works the best
+
 
 
 if __name__ == '__main__':

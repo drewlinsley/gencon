@@ -92,35 +92,55 @@ def get_segmentation(
     ribbons = ribbons[keep_channels]
     if plot_intermediate:
         from matplotlib import pyplot as plt
+        imn = 92
         plt.subplot(121)
-        plt.imshow(ribbons[0, 32])
+        plt.imshow(vol[imn, ..., 0])
         plt.subplot(122)
-        plt.imshow(ribbons[1, 32])
+        plt.imshow(ribbons[0, imn])
         plt.show()
     return ribbons
 
 
 if __name__ == '__main__':
-    conf = "configs/W-Q.yml"
+    assert len(sys.argv) == 3, "You must supply the config path and the analysis type {ribbon, muller, mito}"
+    conf = sys.argv[1]
+    analysis = sys.argv[2]
+
+    # conf = "configs/W-Q.yml"
     conf = OmegaConf.load(conf)
-    ckpt_path = "../gcp_models/results/2022-01-22/21-08-22/results/2022-01-22/21-08-22/cont-learn/1ptzic6o/checkpoints/"
-    ckpt = glob(os.path.join(ckpt_path, "*.ckpt"))
-    ckpt = sorted(ckpt, key=os.path.getmtime)[-1]
+    force_coord = conf.ds.force_coord
+    if analysis == "ribbon":
+        ckpt = conf.inference.ribbon_ckpt
+        out_dir = conf.storage.ribbon_path_str
+    elif analysis == "muller":
+        ckpt = conf.inference.muller_ckpt
+        out_dir = conf.storage.muller_path_str
+    elif analysis == "mito":
+        ckpt = conf.inference.mito_ckpt
+        out_dir = conf.storage.mito_path_str
+    else:
+        raise NotImplementedError("{} is not implemented.".format(analysis))
+
+    vol_path = "{}.npy".format(conf.storage.mem_path_str)
     in_channels = 2
     out_channels = 3
-    keep_channels = np.arange(1, 3).astype(int)  # ribbon and conventional
+    keep_channels = [1]  # np.arange(1, 3).astype(int)  # ribbon and conventional
 
     # Get coordinates from the db
-    # x, y, z = 0, 0, 0
-    # vol = np.load("/media/data_cifs/projects/prj_connectomics/wong/mag1_membranes/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}.npy".format(x, y, z, x, y, z))
-    # seg = get_segmentation(vol, ckpt_path)
-
-    coords = db.pull_main_seg_coors()
-    for coord in tqdm(coords, total=len(coords), desc="DB coords"):
-        x, y, z = coord["x"], coord["y"], coord["z"]
-        vol = np.load("/media/data_cifs/projects/prj_connectomics/wong/mag1_membranes/x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}.npy".format(x, y, z, x, y, z))
+    if force_coord:
+        x, y, z = force_coord
+        vol = np.load(vol_path.format(x, y, z, x, y, z))
         seg = get_segmentation(vol, ckpt, in_channels, out_channels, keep_channels)
-        path = conf.storage.ribbon_path_str.format(x, y, z, x, y, z)
+        path = out_dir.format(x, y, z, x, y, z)
         os.makedirs(os.path.sep.join(path.split(os.path.sep)[:-1]), exist_ok=True)
         np.save(path, seg)
+    else:
+        coords = db.pull_main_seg_coors()
+        for coord in tqdm(coords, total=len(coords), desc="DB coords"):
+            x, y, z = coord["x"], coord["y"], coord["z"]
+            vol = np.load(vol_path.format(x, y, z, x, y, z))
+            seg = get_segmentation(vol, ckpt, in_channels, out_channels, keep_channels)
+            path = out_dir.format(x, y, z, x, y, z)
+            os.makedirs(os.path.sep.join(path.split(os.path.sep)[:-1]), exist_ok=True)
+            np.save(path, seg)
 

@@ -169,7 +169,7 @@ class hGRU(object):
                             shape=[1,1,1,1] + [1],#[lower_feats],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 # last conv layer doesn't have spot weights
                 setattr(
                     self,
@@ -181,7 +181,7 @@ class hGRU(object):
                             shape=[1,1,1,1] + [1],#[lower_feats],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 # last conv layer doesn't have spot weights
                 setattr(
                     self,
@@ -193,7 +193,7 @@ class hGRU(object):
                             shape=[1,1,1,1] + [1],#[lower_feats],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 setattr(
                     self,
                     'ff_%s_weights' % idx,
@@ -204,7 +204,7 @@ class hGRU(object):
                             shape=ff_dhw + [lower_feats, higher_feats*self.ff_kpool_multiplier],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 setattr(
                     self,
                     'ff_%s_bias' % idx,
@@ -212,7 +212,7 @@ class hGRU(object):
                         name='bias',
                         dtype=self.dtype,
                         initializer=tf.ones([higher_feats], dtype=self.dtype),
-                        trainable=True))
+                        trainable=False))
                 if self.bn_reuse:
                     # Make the batchnorm variables
                     scopes = ['pre-conv', 'post-conv']
@@ -244,7 +244,7 @@ class hGRU(object):
                             shape=fb_dhw + [lower_feats, higher_feats],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 setattr(
                     self,
                     'fb_%s_bias' % idx,
@@ -255,7 +255,7 @@ class hGRU(object):
                             shape=[lower_feats],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 if self.bn_reuse:
                     # Make the batchnorm variables
                     bn_vars = ['moving_mean', 'moving_variance', 'gamma']
@@ -282,7 +282,7 @@ class hGRU(object):
                             shape=self.hgru_dhw[idx] + [self.hgru_k[idx], self.hgru_k[idx]],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 setattr(
                     self,
                     'hgru_%s_W_exc' % idx,
@@ -293,7 +293,7 @@ class hGRU(object):
                             shape=self.hgru_dhw[idx] + [self.hgru_k[idx], self.hgru_k[idx]],
                             dtype=self.dtype,
                             uniform=self.normal_initializer),
-                        trainable=True))
+                        trainable=False))
                 # gate/mix params
                 g_shape = [1,1,1,1] + [1]#[lower_feats],
                 setattr(
@@ -302,7 +302,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_a_weights_x',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=g_shape,
                             dtype=self.dtype,
@@ -314,7 +314,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_a_weights_y',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=g_shape,
                             dtype=self.dtype,
@@ -326,7 +326,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_a_weights_xy',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=g_shape,
                             dtype=self.dtype,
@@ -338,7 +338,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_a_weights_mlp',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=[1,1,1,self.hgru_k[idx],self.hgru_k[idx]],
                             dtype=self.dtype,
@@ -350,7 +350,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_b_weights_x',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=g_shape,
                             dtype=self.dtype,
@@ -362,7 +362,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_b_weights_y',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=g_shape,
                             dtype=self.dtype,
@@ -374,7 +374,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_b_weights_xy',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=g_shape,
                             dtype=self.dtype,
@@ -386,7 +386,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_b_weights_mlp',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=[1,1,1,self.hgru_k[idx],self.hgru_k[idx]],
                             dtype=self.dtype,
@@ -399,7 +399,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='mix_weights_x',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=m_shape,
                             dtype=self.dtype,
@@ -411,7 +411,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='mix_weights_y',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=m_shape,
                             dtype=self.dtype,
@@ -423,7 +423,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='mix_weights_xy',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=m_shape,
                             dtype=self.dtype,
@@ -435,7 +435,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='mix_weights_mlp',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=initialization.xavier_initializer(
                             shape=[1,1,1,self.hgru_k[idx],self.hgru_k[idx]],
                             dtype=self.dtype,
@@ -459,7 +459,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_a_bias',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=bias_init))
                 setattr(
                     self,
@@ -467,7 +467,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='gain_b_bias',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=bias_init))
                 if self.gate_bias_init == 'chronos':
                     bias_init = -bias_init
@@ -479,7 +479,7 @@ class hGRU(object):
                     tf.get_variable(
                         name='mix_bias',
                         dtype=self.dtype,
-                        trainable=True,
+                        trainable=False,
                         initializer=bias_init))
 
                 # combination params
@@ -618,24 +618,30 @@ class hGRU(object):
             strides,
             mode='transpose'):
         """Resize activity x to the size of y using interpolation."""
-        y_size = y.get_shape().as_list()
+        n, d, h, w, c = x.get_shape()
         if mode == 'resize':
-            return tf.image.resize_images(
+            n, d, h, w, c = x.get_shape()
+            x = tf.reshape(x, [n * d, h, w, c])
+            yn, yd, yh, yw, yc = y.get_shape()
+            y = tf.reshape(y, [yn * yd, yh, yw, yc])
+            x = tf.image.resize_bilinear(
                 x,
-                y_size[:-1],
-                kernel,
+                y.get_shape(),
                 align_corners=True)
+            x = tf.reshape(x, [yn, yd, yh, yw, yc])
         elif mode == 'transpose':
+            # y_size = tf.Tensor.get_shape(y)  # ().as_list()
             resized = tf.nn.conv3d_transpose(
                 value=x,
                 filter=kernel,
-                output_shape=y_size,
+                output_shape=tf.shape(y),
                 strides=[1] + strides + [1],
                 padding=self.padding,
                 name='resize_x_to_y')
             return resized
         else:
             raise NotImplementedError(mode)
+        return x
 
     def generic_combine(self, tensor1, tensor2, w1, w2, w3):
         stacked = w1*tensor1 + w2*tensor2 + (w3*tensor1)*tensor2
@@ -905,15 +911,10 @@ class hGRU(object):
 
         # HGRU 0
         idx = 0
-        if 0:  # self.adapation:
-            with tf.variable_scope('hgru_%s' % idx, reuse=True):
-                eta1 = tf.get_variable("eta1")
-                eta2 = tf.get_variable("eta2")
-            e2 = tf.gather(eta2, i0, axis=-1)
-            e1 = tf.gather(eta1, i0, axis=-1)
-            l0_fb *= e2
-        else:
-            e1=1
+        e1=1
+        if l0_h2 is None:
+            l0_h2 = tf.zeros_like(x)
+            l0_fb = tf.zeros_like(x)
         for i in range(self.h_repeat):
             l0_h2 *= e1
             _, l0_h2 = self.hgru_ops(
@@ -1034,6 +1035,9 @@ class hGRU(object):
                 name='ff_pool_%s' % idx)
 
         # HGRU 1
+        if l1_h2 is None:
+            l1_h2 = tf.zeros_like(ff0)
+            l1_fb = tf.zeros_like(ff0)
         idx = 1
         if self.adapation:
             with tf.variable_scope('hgru_%s' % idx, reuse=True):
@@ -1164,6 +1168,9 @@ class hGRU(object):
 
 
         # HGRU 2
+        if l2_h2 is None:
+            l2_h2 = tf.zeros_like(ff1)
+            l2_fb = tf.zeros_like(ff1)
         idx = 2
         if self.adapation:
             with tf.variable_scope('hgru_%s' % idx, reuse=True):
@@ -1288,6 +1295,10 @@ class hGRU(object):
                 k=self.ff_pool_dhw[idx],
                 s=self.ff_pool_strides[idx],
                 name='ff_pool_%s' % idx)
+
+        # return  # TEMP FIX
+
+        # # CANNOT HANDLE THE RESIZES
 
         # FEEDBACK 2
         idx=2
@@ -1415,60 +1426,33 @@ class hGRU(object):
         else:
             return int(in_length/stride + 1)
 
-    def build(self, x, seed):
+    def build_new(self, x, seed):
         """Run the backprop version of the Circuit."""
         self.prepare_tensors()
         i0 = tf.constant(0)
 
         # Calculate l2 hidden state size
-        x_shape = x.get_shape().as_list()
-        if self.include_pooling:
-            l0_shape = x_shape
-            l1_shape = [
-                    x_shape[0],
-                    self.compute_shape(l0_shape[1], self.ff_pool_strides[0][0]),
-                    self.compute_shape(l0_shape[2], self.ff_pool_strides[0][1]),
-                    self.compute_shape(l0_shape[3], self.ff_pool_strides[0][2]),
-                    self.ff_conv_k[0]]
-            l2_shape = [
-                    x_shape[0],
-                    self.compute_shape(l1_shape[1], self.ff_pool_strides[1][0]),
-                    self.compute_shape(l1_shape[2], self.ff_pool_strides[1][1]),
-                    self.compute_shape(l1_shape[3], self.ff_pool_strides[1][2]),
-                    self.ff_conv_k[1]]
-        else:
-            l0_shape = tf.identity(x_shape)
-            l1_shape = tf.identity(x_shape)
-            l2_shape = tf.identity(x_shape)
+        l0_h2, l0_fb, l1_h2, l1_fb, l2_h2, l2_fb = None, None, None, None, None, None
+        self.full(i0, x, l0_h2, l0_fb, l1_h2, l1_fb, l2_h2, l2_fb)
+        return
+
+        # run l0 one last time
+        _, l0_h2 = self.hgru_ops(
+            i0=i0,
+            x=x,
+            h2=l0_h2,
+            fb=l0_fb,
+            var_scope = 'hgru_0')
+
+        return l0_h2
+
+    def build(self, x, seed):
+        """Run the backprop version of the Circuit."""
+        self.prepare_tensors()
+        i0 = tf.constant(0)
 
         # Initialize hidden layer activities
-        l0_h2 = tf.ones(l0_shape, dtype=self.dtype)*seed*2 - 1
-        l0_fb = tf.zeros(l0_shape, dtype=self.dtype)
-        l1_h2 = tf.zeros(l1_shape, dtype=self.dtype)
-        l1_fb = tf.zeros(l1_shape, dtype=self.dtype)
-        l2_h2 = tf.zeros(l2_shape, dtype=self.dtype)
-        l2_fb = tf.zeros(l2_shape, dtype=self.dtype)
-        #
-        # # While loop
-        # elems = [
-        #     i0,
-        #     x,
-        #     l0_h2,
-        #     l0_fb,
-        #     l1_h2,
-        #     l1_fb,
-        #     l2_h2,
-        #     l2_fb]
-        #
-        # returned = tf.while_loop(
-        #     self.condition,
-        #     self.full,
-        #     loop_vars=elems,
-        #     back_prop=True,
-        #     swap_memory=False)
-        #
-        # # Prepare output
-        # i0, x, l0_h2, l0_fb, l1_h2, l1_fb, l2_h2, l2_fb = returned
+        l0_h2, l0_fb, l1_h2, l1_fb, l2_h2, l2_fb = None, None, None, None, None, None
 
         for t in range(self.timesteps):
             i0, x, l0_h2, l0_fb, l1_h2, l1_fb, l2_h2, l2_fb = self.full(i0, x, l0_h2, l0_fb, l1_h2, l1_fb, l2_h2, l2_fb)
@@ -1481,4 +1465,5 @@ class hGRU(object):
             fb=l0_fb,
             var_scope = 'hgru_0')
 
-        return l0_h2
+        return l0_h2, l1_h2, l2_h2
+

@@ -6,18 +6,21 @@ import psycopg2
 import psycopg2.extras
 import psycopg2.extensions
 import numpy as np
-from db import credentials
+try:
+    from db import credentials
+except:
+    import credentials
 from tqdm import tqdm
 sshtunnel.DAEMON = True  # Prevent hanging process due to forward thread
 
 
 
 class db(object):
-    def __init__(self, ssh_forward=True):
+    def __init__(self, ssh_forward=True):  # True):
         """Init global variables."""
         self.status_message = False
         self.db_schema_file = os.path.join('db', 'db_schema.txt')
-        self.db_ssh_forward = ssh_forward
+        self.db_ssh_forward = False  # ssh_forward
         # Pass config -> this class
         # for k, v in list(config.items()):
         #     setattr(self, k, v)
@@ -47,7 +50,7 @@ class db(object):
                 cursor_factory=psycopg2.extras.RealDictCursor)
         except Exception as e:
             self.close_db()
-            if self.db_ssh_forward:
+            if hasattr(self, "db_ssh_forward") and self.db_ssh_forward:
                 self.forward.close()
             print(e)
         return self
@@ -267,11 +270,23 @@ class db(object):
             """
             SELECT *
             FROM coordinates
-            WHERE processed=True
             """)
+            # WHERE processed=True
         if self.status_message:
             self.return_status('SELECT')
         return self.cur.fetchall()
+
+    def get_main_progress(self):
+        """Return the count of finished coordinates."""
+        self.cur.execute(
+            """
+            SELECT count(*)
+            FROM coordinates
+            WHERE is_processing=False
+            """)
+        if self.status_message:
+            self.return_status('SELECT')
+        return self.cur.fetchone()
 
     def reset_rows(self, rows):
         """Set membrane processed=True."""
@@ -280,6 +295,16 @@ class db(object):
             UPDATE coordinates
             SET processed=False
             WHERE _id=%(_id)s""", rows)
+        if self.status_message:
+            self.return_status('UPDATE')
+
+    def reset_table(self):
+        """Set membrane processed=True."""
+        self.cur.executemany(
+            """
+            UPDATE coordinates
+            SET processed=False, is_processing=False
+            """)
         if self.status_message:
             self.return_status('UPDATE')
 
@@ -305,6 +330,14 @@ def reset_database():
     config = credentials.postgresql_connection()
     with db(config) as db_conn:
         db_conn.reset()
+        db_conn.return_status('RESET')
+
+
+def reset_a_table():
+    """Reset coordinate progress."""
+    config = credentials.postgresql_connection()
+    with db(config) as db_conn:
+        db_conn.reset_table()
         db_conn.return_status('RESET')
 
 
@@ -384,12 +417,23 @@ def pull_main_seg_coors():
     return finished_segments
 
 
+def pull_main_progress():
+    """Return the list of membrane coordinates."""
+    config = credentials.postgresql_connection()
+    with db(config) as db_conn:
+        finished_segments = db_conn.get_main_progress()
+    return finished_segments["count"]
+
+
 def main(
-        initialize_db):
+        initialize_db=False,
+        check_progress=False):
     """Test the DB."""
     if initialize_db:
         print('Initializing database.')
         initialize_database()
+    if check_progress:
+        print(pull_main_progress())
 
 
 if __name__ == '__main__':
@@ -399,6 +443,11 @@ if __name__ == '__main__':
         dest="initialize_db",
         action='store_true',
         help='Recreate your database.')
+    parser.add_argument(
+        "--check_progress",
+        dest="check_progress",
+        action='store_true',
+        help='Check progress on your db jobs.')
     args = parser.parse_args()
     main(**vars(args))
 

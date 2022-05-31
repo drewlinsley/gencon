@@ -27,12 +27,15 @@ inference:
     # ffn_model: "feedback_hgru_v5_3l_notemp_f_v4"
     ribbon_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/synapse_fgru_ckpts/synapse_fgru_v2_ckpts-85000"
     muller_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/celltype_ckpts/good"
-    move_threshold: 0.7
-    segment_threshold: 0.3
+    move_threshold: 0.8
+    segment_threshold: 0.4
+    membrane_seed_threshold: 0.9
+    truncation: 80
+    skip_membranes_if_completed: True
 ds:
     path: "${project_directory}"
     img_layer: "color"
-    scale: [11.239999771118164, 11.239999771118164, 28]
+    scale: [12., 12., 30.]
     vol_shape: [240, 1152, 1152]
     resize_mod: [1., 1., 1.]
     force_coord: [3690, 7421, 1414]

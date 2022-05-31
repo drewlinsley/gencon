@@ -85,6 +85,7 @@ def get_segmentation(
         normalize=True,
         membrane_slice=[64, 384, 384],  # 576
         membrane_overlap_factor=[0.5, 0.5, 0.5],  # [0.875, 2./3., 2./3.],
+        aggregate_membranes=False,
         res_shape=None,
         crop_shape=None,
         z_shape=None):
@@ -101,7 +102,7 @@ def get_segmentation(
     _vol = vol.shape
 
     # Predict its membranes
-    if membrane_slice is not None:
+    if membrane_slice:
         assert isinstance(
             membrane_slice, list), 'Make membrane_slice a list.'
         # Split up membrane along z-axis into k-voxel chunks
@@ -154,29 +155,6 @@ def get_segmentation(
                     [vs.shape for vs in vols])))
             os._exit(1)
         del vols  # Garbage collect
-        # membranes = []
-        # for idx, it_vol in tqdm(enumerate(vol_stack), total=len(vol_stack), desc="Processing membranes"):
-        #     if idx == 0:
-        #         preds, sess, test_dict = fgru.main(
-        #             test=it_vol[None, ..., None],
-        #             evaluate=True,
-        #             adabn=True,
-        #             gpu_device='/gpu:0',
-        #             return_sess=True,
-        #             test_input_shape=np.concatenate((
-        #                 membrane_slice, [1])).tolist(),
-        #             test_label_shape=np.concatenate((
-        #                 membrane_slice, [3])).tolist(),
-        #             checkpoint=membrane_ckpt)
-        #     else:
-        #         feed_dict = {
-        #             test_dict['test_images']: it_vol[None, ..., None],
-        #         }
-        #         it_test_dict = sess.run(
-        #             test_dict,
-        #             feed_dict=feed_dict)
-        #         preds = it_test_dict['test_logits'].squeeze()
-        #     membranes.append(preds) 
         membranes = fgru.main(
             test=vol_stack,
             evaluate=True,
@@ -187,13 +165,19 @@ def get_segmentation(
             test_label_shape=np.concatenate((
                 membrane_slice, [3])).tolist(),
             checkpoint=membrane_ckpt)
-        membranes = [mbr.max(-1) for mbr in membranes]  # Save some memory on the concatenation
+        if aggregate_membranes:
+            membranes = [mbr.max(-1) for mbr in membranes]  # Save some memory on the concatenation
+        else:
+            membranes = [mbr[..., :3] for mbr in membranes]  # Save some memory on the concatenation
         membranes = np.concatenate(membranes, 0)
 
-    if membrane_slice is not None:
+    if membrane_slice:  #  is not None:
         # Reconstruct, accounting for overlap
         # membrane_model_shape = tuple(list(_vol) + [3])
-        rmembranes = np.zeros(_vol, dtype=np.float32)
+        if aggregate_membranes:
+            rmembranes = np.zeros(_vol, dtype=np.float32)
+        else:
+            rmembranes = np.zeros(list(_vol) + [3], dtype=np.float32)
         count = 0
         vols = []
         normalization = np.zeros_like(rmembranes)
@@ -249,9 +233,16 @@ def get_segmentation(
             test_label_shape=np.concatenate((
                 model_shape, [3])).tolist(),
             checkpoint=membrane_ckpt)
-        membranes = np.concatenate(membranes, 0).max(-1)  # mean
-    membranes = np.stack(
-        (vol, membranes), axis=-1).astype(np.float32) * 255.
+        if aggregate_membranes:
+            membranes = np.concatenate(membranes, 0).max(-1)  # mean
+        else:
+            membranes = np.concatenate(membranes, 0)
+    if aggregate_membranes:
+        membranes = np.stack(
+            (vol, membranes), axis=-1).astype(np.float32) * 255.
+    else:
+        membranes = np.concatenate(
+            (vol[..., None], membranes), axis=-1).astype(np.float32) * 255.
     # np.save(mpath, membranes)
     # from matplotlib import pyplot as plt; slc = 32;plt.subplot(121);plt.imshow(vol[slc]);plt.subplot(122);plt.imshow(membranes[slc, ..., 1]);plt.show()
     # print('Saved membrane volume to %s' % mpath)

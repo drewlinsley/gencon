@@ -4,8 +4,8 @@ name: "mouse_v2"
 token: "UTUOQJvbbyRFbD_NSnTMig"
 db_name: "mouse_v2"
 db_ssh_forward: True
-# stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
-stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
+stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
+# stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
 project_directory: "${stem}/projects/prj_connectomics/mouse_v2"
 file_save_str: "x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
 storage:
@@ -28,7 +28,9 @@ inference:
     ribbon_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/synapse_fgru_ckpts/synapse_fgru_v2_ckpts-85000"
     muller_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/celltype_ckpts/good"
     move_threshold: 0.8  # 0.7
-    segment_threshold: 0.5  # 0.4
+    segment_threshold: 0.6  # 0.4
+    membrane_seed_threshold: 0.9
+    skip_membranes_if_completed: True
 ds:
     path: "${project_directory}"
     img_layer: "color"

@@ -12,6 +12,7 @@ from joblib import Parallel, delayed
 from scipy.spatial.distance import pdist, squareform
 from scipy.optimize import minimize
 from skimage.transform import resize
+import lycon
 from omegaconf import OmegaConf
 from skimage.segmentation import relabel_sequential as rs
 # from memory_profiler import profile
@@ -369,6 +370,7 @@ def process_h_merge(
         mins,
         vs,
         parallel,
+        transpose_vol=False,
         max_vox=None,
         margin_start=0,
         margin_end=1,
@@ -395,9 +397,17 @@ def process_h_merge(
     if not len(vol):
         return main, max_vox
 
+    if transpose_vol:
+        vol = vol.transpose(transpose_vol)
+
     # Resize vol if necessary
     vol_shape = vol.shape
     if not np.all(vs == vol_shape):
+        # mn, mx = vol.min(), vol.max()
+        # vol = np.concatenate(
+        #     [lycon.resize(vol[..., x], height=vs[0], width=vs[1], interpolation=lycon.Interpolation.NEAREST) for x in range(vol)]).astype(vol.dtype, -1)
+        # nmn = vol.min()
+        # nmx = vol.max()
         vol = resize(
             vol,
             vs[:-1],
@@ -627,6 +637,7 @@ def main(
         magic_merge_number_min=5,  # 6
         dtype=np.uint32,  # Data type of merged segmentations
         version=None,  # "fixed",
+        transpose_vol=False,  # (1, 2, 0),
         n_jobs=25,
         h_margin=334,  # Distance between merges
         bu_margin=120,
@@ -659,8 +670,9 @@ def main(
     """
     conf = OmegaConf.load(conf)
     file_path = conf.storage.seg_path_root  # For globbing
-    seg_path = conf.storage.seg_path_str  # For loading files
+    seg_path = conf.storage.postproc_seg_path_str  # For loading files
     out_dir = conf.storage.merge_seg_path
+    max_coordinate = conf.ds.maximum_z_processing
     res_shape = np.asarray(conf.ds.vol_shape[::-1])
     # version of the main volume. Account for this when merging.
     make_dir(out_dir)
@@ -677,6 +689,8 @@ def main(
     coordinates = np.asarray(
         [[int(c[1:]) for c in p.split(os.path.sep)[-4:-1]] for p in paths])
     unique_z = np.unique(coordinates[:, -1])  # Get z coordinates for merging
+    if max_coordinate:
+        unique_z = unique_z[unique_z < max_coordinate]
     print("Merging over these z coordinates: {}".format(unique_z))
 
     # Quick load one vol and get shape info
@@ -694,7 +708,7 @@ def main(
     max_vox, count, prev = 1, 0, None
     all_failed_skeletons = []
     pbar = tqdm(enumerate(unique_z), total=len(unique_z), desc="Z-axis progress")
-    with Parallel(max_nbytes=None, n_jobs=n_jobs, require='sharedmem') as parallel:
+    with Parallel(n_jobs=n_jobs, require='sharedmem') as parallel:
         for zidx, z in pbar:
             # Allocate tensor
             main = np.zeros(slice_shape, dtype)
@@ -784,6 +798,7 @@ def main(
                         max_vox=max_vox,
                         min_vol_size=min_vol_size,
                         margin=h_margin,
+                        transpose_vol=transpose_vol,
                         vs=res_shape)
                     pbar.set_description("Z-slice main clock (current max is {})".format(max_vox))
                     if max_vox == 1:
