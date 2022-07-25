@@ -1,13 +1,15 @@
-# Install postgres for managing volume segmentations/curations
+# Optional: Install postgres for managing volume segmentations/curations
 1. sudo apt update
 2. sudo apt install postgresql postgresql-contrib
 3. `cp db/credentials.py.template db/credentials.py` (then edit the new file).
 4. `cp config.py.template config.py` (then edit the new file)
 
-# Install python packages for segmenting and curating volumes
+# Optional: Create database and add a couple of dev packages for python
 1. `sudo apt-get install libpq-dev python-dev`
 2. `python setup.py install`
-3. `pip install -r requirements.txt`
+
+# Install python packages for segmenting and curating volumes
+1. `pip install -r requirements.txt`
 
 # Segment a volume
 As a test case, we focus on a high-resolution retinal volume from Rachel Wong's lab. We want to use our models, which were trained on k0725 (Ding et al., 2016), a low-resolution volume of mouse retina.
