@@ -16,7 +16,6 @@ try:
 except Exception:
     print('Failed to import parse_requirements.')
 
-
 # try:
 #     setup(
 #         name="membrane_filling",
@@ -32,18 +31,21 @@ config = Config()
 log = logger.get(os.path.join(config.log_dir, 'setup'))
 log.info('Installed required packages and created paths.')
 
-params = credentials.postgresql_connection()
-sys_password = credentials.machine_credentials()['password']
-os.popen(
-    'sudo -u postgres createuser -sdlP %s' % params['user'], 'w').write(
-    sys_password)
-os.popen(
-    'sudo -u postgres createdb %s -O %s' % (
-        params['database'],
-        params['user']), 'w').write(sys_password)
-log.info('Created DB.')
-initialize_database()
-print("Initialized DB.")
+try:
+    params = credentials.postgresql_connection()
+    sys_password = credentials.machine_credentials()['password']
+    os.popen(
+        'sudo -u postgres createuser -sdlP %s' % params['user'], 'w').write(
+        sys_password)
+    os.popen(
+        'sudo -u postgres createdb %s -O %s' % (
+            params['database'],
+            params['user']), 'w').write(sys_password)
+    log.info('Created DB.')
+    initialize_database()
+    print("Initialized DB.")
+except:
+    print("Failed to create DB. Can you use Postgres?")
 
 
 
