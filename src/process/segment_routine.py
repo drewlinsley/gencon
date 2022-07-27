@@ -6,10 +6,13 @@ from src.process import membrane_segmentation
 from skimage.transform import resize
 from skimage.segmentation import relabel_sequential as rs
 import numpy as np
-from db import db
 from omegaconf import OmegaConf
 from matplotlib import pyplot as plt
 import lycon
+try:
+    from db import db
+except:
+    print("Failed to import db scripts.")
 
 
 def main(conf, resize_order=3):
