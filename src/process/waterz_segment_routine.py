@@ -6,11 +6,14 @@ from skimage.transform import resize
 from skimage.segmentation import relabel_sequential as rs
 from skimage.morphology import remove_small_objects
 import numpy as np
-from db import db
 from omegaconf import OmegaConf
 from matplotlib import pyplot as plt
 import cc3d
 import waterz
+try:
+    from db import db
+except:
+    print("Failed to import db scripts.")
 
 
 def main(conf, resize_order=3):
