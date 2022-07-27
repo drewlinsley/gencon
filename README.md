@@ -27,7 +27,7 @@ We will segment this volume by doing the following.
 1. bash pnode_job_full_segmentation.sh
 2. bash pnode_job_waterz_postproc.sh
 
-# Merge processed subvolumes into a big volume
+# (If you have multiple subvolumes that need to be merged, merge them into a big volume)
 1. python src/postprocess/combine_merge_and_upload_full.py <config name>
 
 # Upload to WK
