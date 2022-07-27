@@ -493,6 +493,7 @@ def evaluate_model(
     sess, summary_op, summary_writer, saver, restore_saver, adabn_init = initialize_tf(
         adabn, model_graph, sess=sess)
     if force_return_model:
+        import pdb;pdb.set_trace()
         saver.restore(sess, checkpoint)
         return test_dict, sess
     else:

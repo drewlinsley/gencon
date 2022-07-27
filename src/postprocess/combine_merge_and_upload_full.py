@@ -168,7 +168,7 @@ def main(conf, n_jobs=1):
                 prev = merged_segs
 
         # Downsample
-        layer_segmentations.downsample(compress=True)
+        # layer_segmentations.downsample(compress=True)
 
         # # Upload
         # url = ds.upload()

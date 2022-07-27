@@ -1,0 +1,50 @@
+# Config for processing W-Q's volume
+
+name: "GJD2"
+token: "yWeTFbARG6kWX9X4N804hA"
+db_name: "GJD2"
+db_ssh_forward: True
+# stem: "/media/data_cifs/connectomics/from_berson/Rachel_Wong_Lab"
+stem: "/media/data_cifs/"  # "/cifs/data/tserre/CLPS_Serre_Lab/"
+# stem: "/cifs/data/tserre/CLPS_Serre_Lab/"
+project_directory: "${stem}/projects/prj_connectomics/GJD2"
+file_save_str: "x{}/y{}/z{}/110629_k0725_mag1_x{}_y{}_z{}"
+storage:
+    raw_img_path: ""
+    merge_seg_path: "${project_directory}/merge_mag1_segs"
+    seg_path_root: "${project_directory}/mag1_segs"
+    mem_path_root: "${project_directory}/mag1_membranes"
+    ribbon_path_root: "${project_directory}/mag1_ribbons"
+    muller_path_root: "${project_directory}/mag1_mullers"
+    seg_path_str: "${project_directory}/mag1_segs/${file_save_str}"
+    mem_path_str: "${project_directory}/mag1_membranes/${file_save_str}"
+    postproc_seg_path_str: "${project_directory}/mag1_segs_pp/${file_save_str}"
+    ribbon_path_str: "${project_directory}/mag1_ribbons/${file_save_str}"
+    muller_path_str: "${project_directory}/mag1_mullers/${file_save_str}"
+    mito_path_str: "${project_directory}/mag1_mitos/${file_save_str}"
+inference:
+    membrane_ckpt: "${stem}/connectomics/checkpoints/l3_fgru_constr_berson_0_berson_0_2019_02_16_22_32_22_290193/model_137000.ckpt-137000"
+    ffn_ckpt: "${stem}/connectomics/ffn_ckpts/64_fov/ts_1/model.ckpt-1632105"
+    ffn_model: "feedback_hgru_v5_3l_notemp_f_v5_ts_1"
+    ribbon_ckpt: "${stem}/projects/prj_connectomics/ffn_membrane_v2/synapse_fgru_ckpts/synapse_fgru_v2_ckpts-85000"
+    muller_ckpt: "/media/data_cifs/projects/prj_connectomics/gcp_checkpoints/WQ_muller_tpu.ymal.ckpt"  # "${stem}/projects/prj_connectomics/ffn_membrane_v2/celltype_ckpts/good"
+    mito_ckpt: "/media/data_cifs/projects/prj_connectomics/gcp_checkpoints/WQ_mito_tpu.yaml.ckpt"
+    move_threshold: 0.7  # 0.7
+    segment_threshold: 0.4  # 0.4
+    membrane_seed_threshold: 0.8  # 0.8
+    truncation: 90  # 80
+    skip_membranes_if_completed: False  # True
+ds:
+    path: "/media/data_cifs/connectomics/from_berson/Rachel_Wong_Lab/GJD2"
+    img_layer: "color"
+    scale: [5, 50, 50]
+    extent: False  # [10600, 10600, 10000]
+    vol_shape: [240, 4740, 4740]
+    resize_mod: [1., 4.114, 4.114]
+    force_coord: False  # [0, 0, 360]  # False  # [4356, 4356, 360]  # False
+    # membrane_slice: [240, 384, 384]
+    membrane_slice: [120, 384, 384]
+    cube_size: [128, 128, 128]  # For creating wkw cubes
+    segmentation_layer: False
+    maximum_z_processing: 400
+

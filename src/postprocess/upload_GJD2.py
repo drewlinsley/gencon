@@ -42,19 +42,27 @@ def main(conf, n_jobs=1):
         ds = wk.Dataset(ds_input, scale=scale, exist_ok=True)
 
         # Compress and downsample segmentationns
-        segmentation_layer = ds.get_layer("segmentation")
+        segmentation_layer = ds.get_layer("muller")
         segmentation_mag = segmentation_layer.get_mag("1")
-        segmentation_mag.compress() 
-        segmentation_layer.downsample(compress=True)
+        # segmentation_mag.compress() 
+        # segmentation_layer.downsample(compress=True)
 
-        images_layer = ds.get_layer(image_layer)
-        images_mag = images_layer.get_mag("1")
-        images_mag.compress()
-        images_layer.downsample(compress=True)
+        # images_layer = ds.get_layer(image_layer)
+        # images_mag = images_layer.get_mag("1")
+        # images_mag.compress()
+        # images_layer.downsample(compress=True, jobs=1)
 
         # Upload
-        ds.name = "john_test_3"
-        url = ds.upload()
+        ds.name = "GJD2_muller_5"
+        url = ds.upload(
+            layers_to_link=[
+                wk.LayerToLink(
+                    organization_id="4fd6473e68256c0a",
+                    dataset_name="GJD2",
+                    layer_name="color"
+                    )
+                ]
+            )
         print(f"Successfully uploaded {url}")
 
 

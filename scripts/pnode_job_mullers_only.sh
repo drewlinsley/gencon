@@ -11,6 +11,6 @@ do
 
     # Run job here
     echo $GPU
-    CUDA_VISIBLE_DEVICES=$GPU python src/process/membrane_segment_routine.py $CONFIG
+    CUDA_VISIBLE_DEVICES=$GPU python src/process/muller_segment_routine.py $CONFIG
 done
 
