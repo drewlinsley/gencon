@@ -1,9 +1,9 @@
 import os
 # from setuptools import setup
-from db import credentials
+# from db import credentials
 from utils import logger
 from config import Config
-from db.db import initialize_database
+# from db.db import initialize_database
 
 
 """e.g. python setup.py install"""
