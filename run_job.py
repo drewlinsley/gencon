@@ -2,7 +2,7 @@ import logging
 # import sys
 import os
 import numpy as np
-from db import db
+# from db import db
 from src.process.hybrid_inference import get_segmentation
 from skimage import measure
 import argparse
