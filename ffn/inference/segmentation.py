@@ -18,7 +18,7 @@ from collections import Counter
 
 import numpy as np
 import scipy.sparse
-from db import db
+# from db import db
 from skimage import measure
 from tqdm import tqdm
 from matplotlib import pyplot as plt
